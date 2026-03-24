@@ -1,0 +1,5 @@
+{
+  "name": "Resume Formatter",
+  "description": "Convert resumes into the Newxel format using AI.",
+  "requestFramePermissions": []
+}
