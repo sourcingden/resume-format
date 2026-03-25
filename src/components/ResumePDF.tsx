@@ -135,13 +135,11 @@ export const ResumePDF = ({ data }: Props) => {
               {/* Ensure section title stays with the first job */}
               <View wrap={false}>
                 <Text style={styles.sectionTitle}>Job Experience</Text>
-                <Text style={styles.itemTitle}>{data.experience[0].role}</Text>
-                <Text style={styles.itemSubtitle}>{data.experience[0].company}</Text>
-                <Text style={styles.itemDates}>{data.experience[0].dates}</Text>
-              </View>
-
-              <View style={styles.item}>
-                <RichText text={data.experience[0].description} style={styles.text} />
+                <View style={styles.item}>
+                  <Text style={styles.itemTitle}>{data.experience[0].role}</Text>
+                  <Text style={styles.itemSubtitle}>{data.experience[0].company}</Text>
+                  <Text style={styles.itemDates}>{data.experience[0].dates}</Text>
+                  <RichText text={data.experience[0].description} style={styles.text} />
 
                   {data.experience[0].responsibilities && data.experience[0].responsibilities.length > 0 && (
                     <View style={{ marginTop: 8 }}>
@@ -167,6 +165,7 @@ export const ResumePDF = ({ data }: Props) => {
                       </Text>
                     </View>
                   )}
+                </View>
               </View>
 
               {/* Render remaining items */}
@@ -278,14 +277,12 @@ export const ResumePDF = ({ data }: Props) => {
             <View style={styles.section}>
               <View wrap={false}>
                 <Text style={styles.sectionTitle}>Projects</Text>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
-                  <Text style={styles.itemTitle}>{data.projects[0].title}</Text>
-                  {data.projects[0].link && <Text style={[styles.text, { color: '#1d4ed8' }]}>{data.projects[0].link}</Text>}
-                </View>
-              </View>
-
-              <View style={styles.item}>
-                <RichText text={data.projects[0].description} style={styles.text} />
+                <View style={styles.item}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
+                    <Text style={styles.itemTitle}>{data.projects[0].title}</Text>
+                    {data.projects[0].link && <Text style={[styles.text, { color: '#1d4ed8' }]}>{data.projects[0].link}</Text>}
+                  </View>
+                  <RichText text={data.projects[0].description} style={styles.text} />
                   {data.projects[0].technologies && (
                     <View style={{ marginTop: 4 }}>
                       <Text style={styles.text}>
@@ -294,6 +291,7 @@ export const ResumePDF = ({ data }: Props) => {
                       </Text>
                     </View>
                   )}
+                </View>
               </View>
 
               {data.projects.slice(1).map((proj, index) => (
