@@ -316,16 +316,11 @@ export const ResumePDF = ({ data }: Props) => {
 
         </View>
 
-        {/* Footer — last page only */}
-        <View
-          style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}
-          fixed
-          render={({ pageNumber, totalPages }: { pageNumber: number; totalPages: number }) =>
-            pageNumber === totalPages ? (
-              <Image src={footerUrl} style={styles.footerImage} />
-            ) : null
-          }
-        />
+        {/* Fill remaining space to push the footer down natively */}
+        <View style={{ flexGrow: 1 }} />
+
+        {/* Footer — implicitly pushed to the bottom of the last page */}
+        <Image src={footerUrl} style={[styles.footerImage, { marginBottom: -40 }]} />
       </Page>
     </Document>
   );
