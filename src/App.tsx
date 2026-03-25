@@ -97,12 +97,15 @@ export default function App() {
       let text = '';
       if (file.type === 'application/pdf') {
         setProgressText('Extracting text from PDF...');
-        setProgress(15);
+        setProgress(10);
         text = await extractTextFromPDF(file);
+      } else if (file.name.endsWith('.docx')) {
+        toast.warning('DOCX text extraction may be lossy. For best results, use a PDF.');
+        text = await file.text();
       } else {
         text = await file.text();
       }
-      
+
       setRawText(text);
       await processText(text, true);
     } catch (err) {
@@ -248,11 +251,11 @@ export default function App() {
                 <div className="flex justify-center">
                   <Button asChild className="cursor-pointer py-6 px-8 text-md font-medium">
                     <label>
-                      Select File (PDF, TXT)
-                      <input 
-                        type="file" 
-                        className="hidden" 
-                        accept=".pdf,.txt" 
+                      Select File (PDF, TXT, DOCX)
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept=".pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                         onChange={handleFileUpload}
                       />
                     </label>
@@ -288,12 +291,12 @@ export default function App() {
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-24 max-w-md mx-auto">
             <Loader2 className="w-12 h-12 text-primary animate-spin mb-6" />
-            <h3 className="text-xl font-medium mb-4">Processing Resume</h3>
-            
+            <h3 className="text-xl font-medium mb-2">Processing Resume</h3>
+            <p className="text-base text-primary font-semibold mb-6 h-6 transition-all duration-500">
+              {progressText}
+            </p>
             <Progress value={progress} className="w-full h-2 mb-2" />
-            
-            <div className="flex justify-between w-full text-sm text-muted-foreground">
-              <span>{progressText}</span>
+            <div className="flex justify-end w-full text-xs text-muted-foreground">
               <span>{Math.round(progress)}%</span>
             </div>
           </div>
