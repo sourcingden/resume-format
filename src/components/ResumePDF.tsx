@@ -318,10 +318,16 @@ export const ResumePDF = ({ data }: Props) => {
 
         </View>
 
-        {/* Footer — fixed so it appears on every page */}
-        <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }} fixed>
-          <Image src={footerUrl} style={styles.footerImage} />
-        </View>
+        {/* Footer — last page only */}
+        <View
+          style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}
+          fixed
+          render={({ pageNumber, totalPages }: { pageNumber: number; totalPages: number }) =>
+            pageNumber === totalPages ? (
+              <Image src={footerUrl} style={styles.footerImage} />
+            ) : null
+          }
+        />
       </Page>
     </Document>
   );
