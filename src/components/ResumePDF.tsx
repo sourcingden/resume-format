@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 60,
     paddingTop: 20,
-    paddingBottom: 50,
+    paddingBottom: 70,
   },
   jobTitle: {
     fontFamily: 'Exo 2',
@@ -109,14 +109,14 @@ export const ResumePDF = ({ data }: Props) => {
           <Text style={styles.name}>{data.name}</Text>
 
           {data.hrSummary && (
-            <View style={styles.section} wrap={false}>
+            <View style={styles.section}>
               <Text style={styles.sectionTitle}>HR Summary</Text>
               <RichText text={data.hrSummary} style={styles.text} />
             </View>
           )}
 
           {data.skills && data.skills.length > 0 && (
-            <View style={styles.section} wrap={false}>
+            <View style={styles.section}>
               <Text style={styles.sectionTitle}>Skills</Text>
               {data.skills.map((skill, index) => (
                 <View key={index} style={styles.listItem}>
@@ -132,7 +132,7 @@ export const ResumePDF = ({ data }: Props) => {
 
           {data.experience && data.experience.length > 0 && (
             <View style={styles.section}>
-              {/* Ensure header stays with the first job title to avoid orphans */}
+              {/* Ensure section title stays with the first job */}
               <View wrap={false}>
                 <Text style={styles.sectionTitle}>Job Experience</Text>
                 <Text style={styles.itemTitle}>{data.experience[0].role}</Text>
@@ -318,8 +318,8 @@ export const ResumePDF = ({ data }: Props) => {
 
         </View>
 
-        {/* Footer — only on the last page */}
-        <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }} wrap={false}>
+        {/* Footer — fixed so it appears on every page */}
+        <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }} fixed>
           <Image src={footerUrl} style={styles.footerImage} />
         </View>
       </Page>
