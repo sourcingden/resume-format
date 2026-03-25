@@ -186,6 +186,8 @@ export async function parseResume(
           { role: 'user', content: `Resume Text:\n${text}` },
         ],
         stream: true,
+        response_format: { type: 'json_object' },
+        max_tokens: 8192,
       });
 
       let textResponse = '';
