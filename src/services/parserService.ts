@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { ResumeData, resumeSchema } from '../types';
+import { ZodError } from 'zod';
 
 const API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY || '';
 const client = new OpenAI({
@@ -8,6 +9,33 @@ const client = new OpenAI({
   dangerouslyAllowBrowser: true,
 });
 
+// ─── Quirky cycling status words shown during AI processing ───────────────────
+const THINKING_WORDS = [
+  'Waffling…',
+  'Oscillating…',
+  'Catastrophizing…',
+  'Spiraling…',
+  'Hedging…',
+  'Faffing…',
+  'Kerfuffling…',
+  'Bouncing…',
+  'Twinkling…',
+  'Overdosing…',
+  'Dancing…',
+  'Levitating…',
+  'Discombobulating…',
+  'Existentialising…',
+  'Caffeinating…',
+  'Pruning…',
+  'Flibbertigibetting…',
+  'Finagling…',
+  'Gliding…',
+  'Gerrymandering…',
+  'Flexing…',
+  'Zesting…',
+];
+
+// ─── System prompt ─────────────────────────────────────────────────────────────
 const SYSTEM_PROMPT = `
 You are an expert resume parser. Your task is to extract structured data from the provided resume text.
 Return ONLY a valid JSON object matching the following TypeScript interface:
@@ -59,7 +87,7 @@ interface ResumeData {
 Rules:
 0. MUST provide detailed reasoning in the "analysis" field FIRST, before extracting other fields.
 1. Extract the name and current/target job title accurately.
-2. The hrSummary should be a brief professional overview.
+2. The hrSummary should be a brief professional overview (2-4 sentences).
 3. Group skills into meaningful categories (e.g., Programming Languages, Frameworks, Tools).
 4. For each experience entry:
    - Identify the role, company, and dates (e.g., "May 2021 - Present").
@@ -75,39 +103,33 @@ Rules:
 11. Extract projects with title, description, technologies used, and any links.
 12. IMPORTANT: When extracting "hrSummary", "description" (in experience), or projects' "description", you MUST use Markdown-style bolding (\`**text**\`) strictly for highlighting key technologies, massive achievements, or impact metrics (e.g., "\`**React, TypeScript**\`", "\`**+40% performance**\`").
 13. If a field is missing, use an empty string or empty array as appropriate.
-14. Ensure the output is strictly valid JSON. No markdown code blocks, just the JSON.
+14. Stay strictly grounded in the source text — do NOT hallucinate or invent details not present.
+15. Ensure the output is strictly valid JSON. No markdown code blocks, just the JSON.
 `;
 
 const MAX_RETRIES = 3;
+const SIMPLE_RESUME_THRESHOLD = 1500; // characters
+
+// ─── Utility helpers ───────────────────────────────────────────────────────────
 
 function extractRetryDelaySec(error: unknown): number {
   try {
     const msg = (error as Error)?.message ?? '';
-
-    // Try to extract retry-after from error message
-    const match1 = msg.match(/retry(?:[-_ ]?after)?[\"'\\s:]+([0-9.]+)/i);
-    if (match1 && match1[1]) {
-      return Math.ceil(parseFloat(match1[1]));
-    }
-
+    const match1 = msg.match(/retry(?:[-_ ]?after)?[\"'\\\s:]+([0-9.]+)/i);
+    if (match1?.[1]) return Math.ceil(parseFloat(match1[1]));
     const match2 = msg.match(/retry in ([0-9.]+)\s*s/i);
-    if (match2 && match2[1]) {
-      return Math.ceil(parseFloat(match2[1]));
-    }
-
-    // Try JSON extraction
+    if (match2?.[1]) return Math.ceil(parseFloat(match2[1]));
     const jsonStart = msg.indexOf('{');
     if (jsonStart !== -1) {
       const body = JSON.parse(msg.slice(jsonStart));
-      const details = body?.error?.details ?? [];
-      for (const detail of details) {
+      for (const detail of body?.error?.details ?? []) {
         if (detail['@type']?.includes('RetryInfo') && detail.retryDelay) {
           return parseInt(detail.retryDelay, 10) || 60;
         }
       }
     }
-  } catch (e) {
-    // ignore parse errors
+  } catch {
+    // ignore
   }
   return 60;
 }
@@ -122,10 +144,6 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-/**
- * Strips illegal ASCII control characters from a string (not inside JSON yet).
- * Keeps \t (0x09), \n (0x0A), \r (0x0D) which JSON allows escaped.
- */
 function sanitizeJson(raw: string): string {
   // eslint-disable-next-line no-control-regex
   return raw.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
@@ -133,15 +151,10 @@ function sanitizeJson(raw: string): string {
 
 /**
  * Robustly extracts the first top-level JSON object from a model response.
- * Handles:
- *  - Markdown code fences (```json ... ``` or ``` ... ```)
- *  - Extra commentary text before/after the JSON
- *  - Unbalanced trailing text after the closing brace
- * Throws if no valid JSON object boundary can be found.
+ * Handles markdown fences, leading commentary, and trailing noise.
  */
 function extractJson(raw: string): string {
   const cleaned = sanitizeJson(raw);
-
   const start = cleaned.indexOf('{');
   if (start === -1) throw new SyntaxError('No JSON object found in model response.');
 
@@ -151,12 +164,10 @@ function extractJson(raw: string): string {
 
   for (let i = start; i < cleaned.length; i++) {
     const ch = cleaned[i];
-
     if (escape) { escape = false; continue; }
     if (ch === '\\' && inString) { escape = true; continue; }
     if (ch === '"') { inString = !inString; continue; }
     if (inString) continue;
-
     if (ch === '{') depth++;
     else if (ch === '}') {
       depth--;
@@ -167,6 +178,30 @@ function extractJson(raw: string): string {
   throw new SyntaxError('JSON object in model response appears to be truncated.');
 }
 
+/**
+ * Determines which DeepSeek model to use based on resume complexity.
+ *  - Short / plain text  → deepseek-chat  (V3, fast & cheap)
+ *  - Long / complex      → deepseek-reasoner (R1, better reasoning)
+ */
+function selectModel(text: string): { model: string; label: string } {
+  if (text.length < SIMPLE_RESUME_THRESHOLD) {
+    return { model: 'deepseek-chat', label: 'V3' };
+  }
+  return { model: 'deepseek-reasoner', label: 'R1' };
+}
+
+/**
+ * Format Zod validation errors into a compact human-readable string
+ * that can be fed back to the LLM as a correction prompt.
+ */
+function formatZodErrors(err: ZodError): string {
+  return err.issues
+    .map(e => `• ${e.path.join('.')}: ${e.message}`)
+    .join('\n');
+}
+
+// ─── Main export ───────────────────────────────────────────────────────────────
+
 export async function parseResume(
   text: string,
   onProgress?: (progress: number, status: string) => void
@@ -175,62 +210,120 @@ export async function parseResume(
     throw new Error('VITE_DEEPSEEK_API_KEY is not configured. Please add it to your environment.');
   }
 
+  const { model } = selectModel(text);
+  let thinkingIdx = 0;
+
+  // Rotate through quirky thinking words while streaming
+  let thinkingInterval: ReturnType<typeof setInterval> | null = null;
+  const startThinkingRotation = (baseProgress: number) => {
+    if (!onProgress) return;
+    thinkingInterval = setInterval(() => {
+      onProgress(baseProgress, THINKING_WORDS[thinkingIdx % THINKING_WORDS.length]);
+      thinkingIdx++;
+    }, 1800);
+  };
+  const stopThinkingRotation = () => {
+    if (thinkingInterval) { clearInterval(thinkingInterval); thinkingInterval = null; }
+  };
+
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      if (onProgress) onProgress(20, 'Connecting to AI parser...');
+      onProgress?.(15, 'Routing to model…');
+      await sleep(300);
+
+      onProgress?.(20, THINKING_WORDS[0]);
+      startThinkingRotation(20);
+
+      // ── First pass: stream the full response ──────────────────────────────
+      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: `Resume Text:\n${text}` },
+      ];
 
       const stream = await client.chat.completions.create({
-        model: 'deepseek-chat',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: `Resume Text:\n${text}` },
-        ],
+        model,
+        messages,
         stream: true,
         response_format: { type: 'json_object' },
-        max_tokens: 8192,
+        max_tokens: 16384,
+        temperature: 0.6,
       });
 
       let textResponse = '';
       let receivedBytes = 0;
-      const EST_EXPECTED_BYTES = 2000;
+      const EST_EXPECTED_BYTES = 3000;
 
       for await (const chunk of stream) {
         const delta = chunk.choices?.[0]?.delta?.content ?? '';
-        if (delta) {
-          textResponse += delta;
-          receivedBytes += delta.length;
+        if (!delta) continue; // skip empty keep-alive chunks
+        textResponse += delta;
+        receivedBytes += delta.length;
 
-          if (onProgress) {
-            const factor = Math.min(1, receivedBytes / EST_EXPECTED_BYTES);
-            // Progress from 20% to 90%
-            const currentP = 20 + (factor * 70);
-            onProgress(currentP, 'Streaming structured data...');
+        // Advance progress 20→85 as tokens arrive (rough estimate)
+        const factor = Math.min(1, receivedBytes / EST_EXPECTED_BYTES);
+        const currentP = 20 + factor * 65;
+        // Let the rotating words show — only update the number
+        if (onProgress) onProgress(currentP, THINKING_WORDS[thinkingIdx % THINKING_WORDS.length]);
+      }
+
+      stopThinkingRotation();
+      onProgress?.(88, 'Extracting JSON structure…');
+      const rawData = JSON.parse(extractJson(textResponse));
+
+      onProgress?.(93, 'Validating schema…');
+
+      // ── Validation with feedback re-ask loop ──────────────────────────────
+      let parsedData: ResumeData;
+      try {
+        parsedData = resumeSchema.parse(rawData);
+      } catch (zodErr) {
+        if (zodErr instanceof ZodError) {
+          // Send errors back to LLM for self-correction (one round)
+          onProgress?.(95, 'Fixing validation errors…');
+          const errorSummary = formatZodErrors(zodErr);
+
+          const correctionStream = await client.chat.completions.create({
+            model,
+            messages: [
+              ...messages,
+              { role: 'assistant', content: textResponse },
+              {
+                role: 'user',
+                content: `The JSON you returned failed schema validation with these errors:\n${errorSummary}\n\nPlease return the corrected JSON object only, fixing all listed issues.`,
+              },
+            ],
+            stream: true,
+            response_format: { type: 'json_object' },
+            max_tokens: 16384,
+            temperature: 0.4,
+          });
+
+          let correctedResponse = '';
+          for await (const chunk of correctionStream) {
+            const delta = chunk.choices?.[0]?.delta?.content ?? '';
+            if (delta) correctedResponse += delta;
           }
+
+          const correctedData = JSON.parse(extractJson(correctedResponse));
+          parsedData = resumeSchema.parse(correctedData); // throws if still invalid
+        } else {
+          throw zodErr;
         }
       }
 
-      if (onProgress) onProgress(92, 'Extracting JSON structure...');
-      const rawData = JSON.parse(extractJson(textResponse));
-
-      if (onProgress) onProgress(96, 'Validating data schema...');
-      // Validate structural integrity and default missing fields using Zod
-      const parsedData = resumeSchema.parse(rawData);
-
-      if (onProgress) onProgress(100, 'Formatting results...');
+      onProgress?.(100, 'Done!');
       return refineData(parsedData);
     } catch (error) {
+      stopThinkingRotation();
       const isLastAttempt = attempt === MAX_RETRIES;
 
       if (isRateLimitError(error)) {
         const delaySec = extractRetryDelaySec(error);
         console.warn(`DeepSeek rate limit hit (attempt ${attempt}/${MAX_RETRIES}). Retrying in ${delaySec}s…`);
-
         if (isLastAttempt) {
-          throw new Error(
-            `The AI service is currently rate-limited. Please wait about ${delaySec} seconds and try again.`
-          );
+          throw new Error(`The AI service is currently rate-limited. Please wait about ${delaySec} seconds and try again.`);
         }
-
+        onProgress?.(10, `Rate limited — retrying in ${delaySec}s…`);
         await sleep(delaySec * 1000);
         continue;
       }
@@ -243,17 +336,18 @@ export async function parseResume(
   throw new Error('Unexpected error in parseResume.');
 }
 
+// ─── Post-processing ───────────────────────────────────────────────────────────
+
 function refineData(data: ResumeData): ResumeData {
-  // Professional refinement of experience fields and listification
   data.experience = data.experience
     .filter(e => e.company || e.role)
     .map(e => {
       let responsibilities = e.responsibilities;
       let description = e.description.trim();
 
-      // Auto-listification if the model didn't quite get the array right but sent a long string
+      // Auto-listification if the model sent a long description instead of an array
       if (responsibilities.length === 0 && description.length > 50) {
-        const sentences = description.split(/[\.!\?][\s\n]+/).filter(s => s.trim().length > 10);
+        const sentences = description.split(/[.!?][\s\n]+/).filter(s => s.trim().length > 10);
         if (sentences.length > 1) {
           responsibilities = sentences.map(s => s.trim());
           description = '';
@@ -266,7 +360,7 @@ function refineData(data: ResumeData): ResumeData {
         role: e.role.trim(),
         dates: e.dates.trim(),
         description,
-        responsibilities: responsibilities.map(r => r.trim()),
+        responsibilities: responsibilities.map(r => r.trim()).filter(Boolean),
       };
     });
 
