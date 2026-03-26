@@ -32,29 +32,23 @@ const pageStyle = {
 };
 
 const styles = StyleSheet.create({
-  page1: { ...pageStyle },
-  page2: { ...pageStyle },
+  page1: { ...pageStyle, flexDirection: 'column' },
+  page2: { ...pageStyle, flexDirection: 'column' },
 
   headerImage: { width: '100%', marginTop: -PAGE_PADDING_TOP },
 
-  // Footer: positioned absolutely at bottom, rendered only on last page via render prop
-  footerFixed: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: '100%',
-  },
+  footerImage: { width: '100%' },
 
   // Content area — two variants
   contentPage1: {
     paddingHorizontal: CONTENT_H_PAD,
     paddingTop: 20,
-    paddingBottom: FOOTER_HEIGHT + 10,
+    paddingBottom: 16,
   },
   contentPage2: {
     paddingHorizontal: CONTENT_H_PAD,
     paddingTop: 40,
-    paddingBottom: FOOTER_HEIGHT + 10,
+    paddingBottom: 16,
   },
 
   // ── Name / title block ──────────────────────────────────────────────────────
@@ -289,9 +283,13 @@ export const ResumePDF = ({ data }: Props) => {
           )}
         </View>
 
-        {/* Footer: only when there's no second page, pinned to bottom */}
+        {/* Spacer pushes footer to the bottom of this page.  
+            Only renders on page 1 if there is no second page. */}
         {!hasSecondPage && (
-          <Image fixed src={footerUrl} style={styles.footerFixed} />
+          <>
+            <View style={{ flexGrow: 1 }} />
+            <Image src={footerUrl} style={styles.footerImage} />
+          </>
         )}
       </Page>
 
@@ -447,8 +445,10 @@ export const ResumePDF = ({ data }: Props) => {
 
           </View>
 
-          {/* Footer: fixed at the absolute bottom, shows on all pages of this Page component */}
-          <Image fixed src={footerUrl} style={styles.footerFixed} />
+          {/* Spacer + footer: spacer (flexGrow:1) fills remaining space on last page,
+              pushing footer to the very bottom. Both are in-flow, not fixed/absolute. */}
+          <View style={{ flexGrow: 1 }} />
+          <Image src={footerUrl} style={styles.footerImage} />
         </Page>
       )}
 
