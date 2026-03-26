@@ -18,31 +18,32 @@ const TEXT_BODY = '#374151';
 const TEXT_MUTED = '#6B7280';
 
 // ─── Shared page styles ───────────────────────────────────────────────────────
-const PAGE_PADDING_TOP = 40;
-const PAGE_PADDING_BOTTOM = 40;
 const CONTENT_H_PAD = 60;
-const FOOTER_HEIGHT = 44; // approximate footer image height in pts
-
-const pageStyle = {
-  paddingTop: PAGE_PADDING_TOP,
-  paddingBottom: PAGE_PADDING_BOTTOM,
-  paddingHorizontal: 0,
-  backgroundColor: '#FFFFFF',
-  fontFamily: 'Helvetica',
-};
+const CONTENT_V_PAD_TOP = 20;  // space between header image and first text block
+const CONTENT_V_PAD_BOTTOM = 16;
 
 const styles = StyleSheet.create({
-  page: { ...pageStyle, flexDirection: 'column' },
+  // Page has zero padding — header & footer images bleed to the very edge
+  page: {
+    paddingTop: 0,
+    paddingBottom: 0,
+    paddingHorizontal: 0,
+    backgroundColor: '#FFFFFF',
+    fontFamily: 'Helvetica',
+    flexDirection: 'column',
+  },
 
-  headerImage: { width: '100%', marginTop: -PAGE_PADDING_TOP },
+  // Header sits flush at the top — no negative margin trick needed
+  headerImage: { width: '100%' },
 
-  footerImage: { width: '100%' },
+  // Negative marginBottom pins the footer image hard to the bottom edge
+  footerImage: { width: '100%', marginBottom: -2 },
 
-  // Content area
+  // Content area — owns all vertical breathing room
   content: {
     paddingHorizontal: CONTENT_H_PAD,
-    paddingTop: 20,
-    paddingBottom: 16,
+    paddingTop: CONTENT_V_PAD_TOP,
+    paddingBottom: CONTENT_V_PAD_BOTTOM,
   },
 
   // ── Name / title block ──────────────────────────────────────────────────────
