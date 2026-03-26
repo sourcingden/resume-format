@@ -289,12 +289,12 @@ export const ResumePDF = ({ data }: Props) => {
           )}
         </View>
 
-        {/* Footer: render only on the last page of the entire document */}
+        {/* Footer: render only on the last sub-page of this Page component */}
         <View
           fixed
           style={styles.footerFixed}
-          render={({ pageNumber, totalPages }: { pageNumber: number; totalPages: number }) =>
-            pageNumber === totalPages ? (
+          render={({ subPageNumber, subPageTotalPages }: any) =>
+            subPageNumber === subPageTotalPages ? (
               <Image src={footerUrl} style={{ width: '100%' }} />
             ) : null
           }
@@ -453,12 +453,12 @@ export const ResumePDF = ({ data }: Props) => {
 
           </View>
 
-          {/* Footer: render only on the last page of the entire document */}
+          {/* Footer: render only on the last sub-page of this Page component */}
           <View
             fixed
             style={styles.footerFixed}
-            render={({ pageNumber, totalPages }: { pageNumber: number; totalPages: number }) =>
-              pageNumber === totalPages ? (
+            render={({ subPageNumber, subPageTotalPages }: any) =>
+              subPageNumber === subPageTotalPages ? (
                 <Image src={footerUrl} style={{ width: '100%' }} />
               ) : null
             }
