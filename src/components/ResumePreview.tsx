@@ -19,7 +19,6 @@ export const ResumePreview = forwardRef<HTMLDivElement, Props>(({ data }, ref) =
             margin: 0 !important;
             padding: 0 !important;
             width: 210mm !important;
-            min-height: 891mm !important; /* Exactly 3 A4 pages */
           }
           .resume-content {
             width: 210mm !important;
@@ -32,7 +31,7 @@ export const ResumePreview = forwardRef<HTMLDivElement, Props>(({ data }, ref) =
 
       <div
         ref={ref}
-        className="resume-page bg-white w-[210mm] mx-auto relative text-slate-800 font-sans pb-40 min-h-[891mm]"
+        className="resume-page bg-white w-[210mm] mx-auto relative text-slate-800 font-sans pb-40"
       >
         {/* Header */}
         <div className="w-full">
