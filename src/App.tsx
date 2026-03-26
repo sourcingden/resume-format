@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, FileText, Loader2, Download, Edit2, Check, Copy, ArrowLeft, History } from 'lucide-react';
+import { Upload, FileText, Loader2, Download, Edit2, Check, Copy, ArrowLeft, History, Wand2 } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import { ResumeData } from './types';
 import { parseResume } from './services/parserService';
@@ -7,6 +7,7 @@ import { extractTextFromPDF } from './utils/pdfParser';
 import { ResumePreview } from './components/ResumePreview';
 import { ResumeEditor } from './components/ResumeEditor';
 import { ResumePDF } from './components/ResumePDF';
+import { exportTypstPDF } from './services/typstRenderer';
 
 // Shadcn UI components
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,10 @@ export default function App() {
   const [progress, setProgress] = useState(0);
   const [progressText, setProgressText] = useState('');
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isTypstLoading, setIsTypstLoading] = useState(false);
+  const [typstProgress, setTypstProgress] = useState(0);
+  const [typstStatus, setTypstStatus] = useState('');
+  const [typstPages, setTypstPages] = useState(2);
   const { history, saveToHistory, clearHistory } = useHistory();
 
   const componentRef = useRef<HTMLDivElement>(null);
@@ -49,6 +54,25 @@ export default function App() {
     } catch (err) {
       console.error('Failed to generate PDF', err);
       toast.error('Failed to generate PDF. Please try again.');
+    }
+  };
+
+  const handleTypstExport = async () => {
+    if (!resumeData) return;
+    setIsTypstLoading(true);
+    setTypstProgress(0);
+    setTypstStatus('');
+    try {
+      await exportTypstPDF(resumeData, typstPages, (pct, status) => {
+        setTypstProgress(pct);
+        setTypstStatus(status);
+      });
+      toast.success('Typst PDF downloaded!');
+    } catch (err) {
+      console.error('Typst export failed', err);
+      toast.error(err instanceof Error ? err.message : 'Typst export failed. Please try again.');
+    } finally {
+      setIsTypstLoading(false);
     }
   };
 
@@ -228,6 +252,38 @@ export default function App() {
                 <Download className="w-4 h-4 mr-2" />
                 <span>PDF</span>
               </Button>
+
+              {/* ── Typst Export ── */}
+              <div className="flex items-center gap-1">
+                {/* Page count picker */}
+                <div className="flex items-center gap-0.5 border border-border rounded-md overflow-hidden text-xs font-medium">
+                  {[1, 2, 3].map(n => (
+                    <button
+                      key={n}
+                      onClick={() => setTypstPages(n)}
+                      className={`px-2 py-1 transition-colors ${
+                        typstPages === n
+                          ? 'bg-primary text-primary-foreground'
+                          : 'hover:bg-accent text-muted-foreground'
+                      }`}
+                    >
+                      {n}p
+                    </button>
+                  ))}
+                </div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleTypstExport}
+                  disabled={isTypstLoading}
+                  title={`Export Typst PDF (${typstPages} page${typstPages > 1 ? 's' : ''})`}
+                >
+                  {isTypstLoading
+                    ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    : <Wand2 className="w-4 h-4 mr-2" />}
+                  <span className="hidden sm:inline">{isTypstLoading ? typstStatus || 'Exporting…' : 'Typst'}</span>
+                </Button>
+              </div>
             </div>
           )}
           </div>
