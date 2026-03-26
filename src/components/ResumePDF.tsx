@@ -39,8 +39,10 @@ const styles = StyleSheet.create({
   // Negative marginBottom pins the footer image hard to the bottom edge
   footerImage: { width: '100%', marginBottom: -2 },
 
-  // Content area — owns all vertical breathing room
+  // Content area — owns all vertical breathing room.
+  // flexGrow: 1 makes this expand on the last page, pushing the footer to the bottom.
   content: {
+    flexGrow: 1,
     paddingHorizontal: CONTENT_H_PAD,
     paddingTop: CONTENT_V_PAD_TOP,
     paddingBottom: CONTENT_V_PAD_BOTTOM,
@@ -407,10 +409,8 @@ export const ResumePDF = ({ data }: Props) => {
           )}
         </View>
 
-        {/* Spacer: fills empty space on the LAST page, pushing the footer to the bottom */}
-        <View style={{ flexGrow: 1 }} />
-
-        {/* Footer: in-flow (no `fixed`), so it renders only once at the very end */}
+        {/* Footer: in-flow (no `fixed`), so it renders only once at the very end.
+            The content View above has flexGrow:1 which pushes this to the bottom. */}
         <Image src={footerUrl} style={styles.footerImage} />
 
       </Page>
