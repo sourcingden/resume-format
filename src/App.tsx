@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, FileText, Loader2, Download, Edit2, Check, Copy, ArrowLeft, History } from 'lucide-react';
+import { Upload, FileText, Download, Edit2, Check, Copy, ArrowLeft, History } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import { ResumeData } from './types';
 import { parseResume } from './services/parserService';
@@ -290,7 +290,37 @@ export default function App() {
 
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-24 max-w-md mx-auto">
-            <Loader2 className="w-12 h-12 text-primary animate-spin mb-6" />
+            {/* Premium multi-ring spinner */}
+            <div className="relative w-20 h-20 mb-8">
+              <svg className="w-full h-full" viewBox="0 0 80 80">
+                {/* Track */}
+                <circle cx="40" cy="40" r="34" fill="none" stroke="currentColor" strokeWidth="3" className="text-primary/10" />
+                {/* Outer arc — slow */}
+                <circle
+                  cx="40" cy="40" r="34" fill="none"
+                  stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+                  strokeDasharray="56 157"
+                  className="text-primary origin-center animate-spin"
+                  style={{ animationDuration: '1.6s', animationTimingFunction: 'linear' }}
+                />
+              </svg>
+              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 80 80">
+                {/* Track */}
+                <circle cx="40" cy="40" r="22" fill="none" stroke="currentColor" strokeWidth="3" className="text-primary/10" />
+                {/* Inner arc — faster, reverse */}
+                <circle
+                  cx="40" cy="40" r="22" fill="none"
+                  stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+                  strokeDasharray="30 108"
+                  className="text-primary origin-center"
+                  style={{ animation: 'spin 1s linear infinite reverse' }}
+                />
+              </svg>
+              {/* Center dot */}
+              <span className="absolute inset-0 flex items-center justify-center">
+                <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
+              </span>
+            </div>
             <h3 className="text-xl font-semibold text-primary mb-6 h-8 transition-all duration-500 text-center">
               {progressText}
             </h3>
