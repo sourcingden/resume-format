@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { ResumeData } from '../types';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -6,6 +6,49 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+
+// ─── RichTextarea: Textarea with Cmd+B bold hotkey ───────────────────────────
+interface RichTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  className?: string;
+}
+
+function RichTextarea({ onChange, value, ...props }: RichTextareaProps) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+      e.preventDefault();
+      const el = ref.current;
+      if (!el) return;
+      const start = el.selectionStart;
+      const end = el.selectionEnd;
+      const text = el.value;
+      const selected = text.slice(start, end);
+      const before = text.slice(0, start);
+      const after = text.slice(end);
+      const newValue = `${before}**${selected}**${after}`;
+      // Synthetic event for React controlled inputs
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+      nativeInputValueSetter?.call(el, newValue);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      // Restore cursor: after **{selection}**
+      const cursorPos = selected.length === 0 ? start + 2 : end + 4;
+      requestAnimationFrame(() => {
+        el.setSelectionRange(cursorPos, cursorPos);
+      });
+    }
+  };
+
+  return (
+    <Textarea
+      ref={ref}
+      value={value}
+      onChange={onChange}
+      onKeyDown={handleKeyDown}
+      {...props}
+    />
+  );
+}
 
 interface Props {
   data: ResumeData;
@@ -65,14 +108,14 @@ export function ResumeEditor({ data, onChange }: Props) {
             </div>
             <div className="space-y-2">
               <Label>HR Summary</Label>
-              <Textarea
+              <RichTextarea
                 value={data.hrSummary || ''}
                 onChange={(e) => updateField('hrSummary', e.target.value)}
                 className="h-32 resize-none"
                 placeholder="Briefly describe your expertise. Use **bold** to highlight key terms."
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Tip: Use <code className="bg-muted px-1 rounded">**text**</code> for <strong>bolding</strong>.
+                Tip: Use <code className="bg-muted px-1 rounded">**text**</code> for <strong>bolding</strong> or press <kbd className="bg-muted px-1 rounded text-xs">⌘B</kbd>.
               </p>
             </div>
           </AccordionContent>
@@ -154,7 +197,7 @@ export function ResumeEditor({ data, onChange }: Props) {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Description</Label>
-                  <Textarea 
+                  <RichTextarea
                     value={exp.description} 
                     onChange={(e) => updateArrayItem('experience', index, 'description', e.target.value)} 
                     className="h-24 resize-none" 
@@ -163,7 +206,7 @@ export function ResumeEditor({ data, onChange }: Props) {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Responsibilities (one per line)</Label>
-                  <Textarea 
+                  <RichTextarea
                     value={(exp.responsibilities || []).join('\n')} 
                     onChange={(e) => updateArrayItem('experience', index, 'responsibilities', e.target.value.split('\n').filter(s => s.trim() !== ''))} 
                     className="h-32 resize-none" 
@@ -306,7 +349,7 @@ export function ResumeEditor({ data, onChange }: Props) {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-muted-foreground">Description</Label>
-                    <Textarea 
+                    <RichTextarea
                       value={proj.description} 
                       onChange={(e) => updateArrayItem('projects', index, 'description', e.target.value)} 
                       className="h-24 resize-none"
