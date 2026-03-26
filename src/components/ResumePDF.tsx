@@ -17,21 +17,44 @@ const TEXT_DARK = '#1f2937';
 const TEXT_BODY = '#374151';
 const TEXT_MUTED = '#6B7280';
 
+// ─── Shared page styles ───────────────────────────────────────────────────────
+const PAGE_PADDING_TOP = 40;
+const PAGE_PADDING_BOTTOM = 40;
+const CONTENT_H_PAD = 60;
+const FOOTER_HEIGHT = 44; // approximate footer image height in pts
+
+const pageStyle = {
+  paddingTop: PAGE_PADDING_TOP,
+  paddingBottom: PAGE_PADDING_BOTTOM,
+  paddingHorizontal: 0,
+  backgroundColor: '#FFFFFF',
+  fontFamily: 'Helvetica',
+};
+
 const styles = StyleSheet.create({
-  page: {
-    paddingTop: 40,
-    paddingBottom: 40,
-    paddingHorizontal: 0,
-    backgroundColor: '#FFFFFF',
-    fontFamily: 'Helvetica',
-    position: 'relative',
+  page1: { ...pageStyle },
+  page2: { ...pageStyle },
+
+  headerImage: { width: '100%', marginTop: -PAGE_PADDING_TOP },
+
+  // Footer: fixed on every page of the SECOND <Page> component only
+  footerFixed: {
+    position: 'absolute',
+    bottom: -PAGE_PADDING_BOTTOM,
+    left: 0,
+    width: '100%',
   },
-  headerImage: { width: '100%', marginTop: -40 },
-  footerImage: { width: '100%' },
-  content: {
-    paddingHorizontal: 60,
+
+  // Content area — two variants
+  contentPage1: {
+    paddingHorizontal: CONTENT_H_PAD,
     paddingTop: 20,
-    paddingBottom: 80, // clearance so content never overlaps the fixed footer
+    paddingBottom: 30,  // no footer needed on page 1
+  },
+  contentPage2: {
+    paddingHorizontal: CONTENT_H_PAD,
+    paddingTop: 40,     // top margin since no header on page 2+
+    paddingBottom: FOOTER_HEIGHT + 20, // clearance for fixed footer
   },
 
   // ── Name / title block ──────────────────────────────────────────────────────
@@ -52,9 +75,6 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     marginBottom: 30,
   },
-
-  // ── Section container ───────────────────────────────────────────────────────
-  section: { marginBottom: 22 },
 
   // ── Section title with accent bar ──────────────────────────────────────────
   sectionTitleRow: {
@@ -135,9 +155,12 @@ const styles = StyleSheet.create({
 
   // ── Skills ───────────────────────────────────────────────────────────────────
   skillCategory: { fontWeight: 'bold', color: TEXT_DARK },
+
+  // ── Section spacing ──────────────────────────────────────────────────────────
+  section: { marginBottom: 22 },
 });
 
-// ─── Section title component with blue accent bar ───────────────────────────
+// ─── Section title component with blue accent bar ────────────────────────────
 
 const SectionTitle = ({ label }: { label: string }) => (
   <View style={styles.sectionTitleRow}>
@@ -148,7 +171,7 @@ const SectionTitle = ({ label }: { label: string }) => (
 
 // ─── Rich text: renders **bold** markdown inline ─────────────────────────────
 
-const RichText = ({ text, style }: { text: string; style: any }) => {
+const RichText = ({ text, style }: { text: string; style: object }) => {
   if (!text) return null;
   const parts = text.split(/(\*\*.*?\*\*)/g);
   return (
@@ -167,11 +190,10 @@ const RichText = ({ text, style }: { text: string; style: any }) => {
   );
 };
 
-// ─── Experience entry (extracted to avoid duplicate code) ────────────────────
+// ─── Experience entry ────────────────────────────────────────────────────────
 
 const ExperienceItem = ({ exp }: { exp: ResumeData['experience'][0] }) => (
   <View style={styles.item}>
-    {/* Role + dates on same row */}
     <View style={styles.itemHeader}>
       <Text style={styles.itemTitle}>{exp.role}</Text>
       {exp.dates ? <Text style={styles.itemDates}>{exp.dates}</Text> : null}
@@ -217,20 +239,32 @@ export const ResumePDF = ({ data }: Props) => {
   const headerUrl = new URL(import.meta.env.BASE_URL + 'header.png', currentPath).href;
   const footerUrl = new URL(import.meta.env.BASE_URL + 'footer.png', currentPath).href;
 
+  const hasSecondPage =
+    (data.experience && data.experience.length > 0) ||
+    (data.projects && data.projects.length > 0) ||
+    (data.education && data.education.length > 0) ||
+    (data.certifications && data.certifications.length > 0) ||
+    (data.languages && data.languages.length > 0) ||
+    (data.achievements && data.achievements.length > 0) ||
+    (data.publications && data.publications.length > 0);
+
   return (
     <Document title={`${data.jobTitle} - ${data.name} - Newxel CV 2026`}>
-      <Page size="A4" style={styles.page}>
-        {/* Header */}
-        <View>
-          <Image src={headerUrl} style={styles.headerImage} />
-        </View>
 
-        <View style={styles.content}>
+      {/* ══════════════════════════════════════════════════════════════════════
+          PAGE 1 — Header image + Name + HR Summary + Skills
+          No footer here. Content is forced to stay on this page component.
+          ══════════════════════════════════════════════════════════════════════ */}
+      <Page size="A4" style={styles.page1}>
+        {/* Header image — full-bleed at the top */}
+        <Image src={headerUrl} style={styles.headerImage} />
+
+        <View style={styles.contentPage1}>
           {/* ── Hero ── */}
           <Text style={styles.jobTitle}>{data.jobTitle}</Text>
           <Text style={styles.name}>{data.name}</Text>
 
-          {/* ── HR Summary ── */}
+          {/* ── HR Summary — always on page 1 ── */}
           {data.hrSummary && (
             <View style={styles.section}>
               <SectionTitle label="HR Summary" />
@@ -238,7 +272,7 @@ export const ResumePDF = ({ data }: Props) => {
             </View>
           )}
 
-          {/* ── Skills ── */}
+          {/* ── Skills — on page 1 with summary ── */}
           {data.skills && data.skills.length > 0 && (
             <View style={styles.section}>
               <SectionTitle label="Skills" />
@@ -253,173 +287,171 @@ export const ResumePDF = ({ data }: Props) => {
               ))}
             </View>
           )}
-
-          {/* ── Experience ──
-              First entry: keep title + first item together (no orphan heading).
-              Remaining entries: each wrapped with wrap={false} so they don't
-              split mid-block for short entries, but long entries are allowed
-              to flow across pages via the outer wrap={true} (default). */}
-          {data.experience && data.experience.length > 0 && (
-            <View style={styles.section}>
-              {/* Section title bound to first entry */}
-              <View wrap={false}>
-                <SectionTitle label="Job Experience" />
-                <ExperienceItem exp={data.experience[0]} />
-              </View>
-
-              {data.experience.slice(1).map((exp, index) => (
-                // minPresenceAhead keeps ≥40pt of the entry on the page
-                // where the header starts — avoids orphan role/company lines
-                <View key={index} minPresenceAhead={40}>
-                  <ExperienceItem exp={exp} />
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* ── Projects ── */}
-          {data.projects && data.projects.length > 0 && (
-            <View style={styles.section}>
-              <View wrap={false}>
-                <SectionTitle label="Projects" />
-                <View style={styles.item}>
-                  <View style={styles.itemHeader}>
-                    <Text style={styles.itemTitle}>{data.projects[0].title}</Text>
-                    {data.projects[0].link ? (
-                      <Text style={[styles.text, { color: BLUE }]}>{data.projects[0].link}</Text>
-                    ) : null}
-                  </View>
-                  <RichText text={data.projects[0].description} style={styles.text} />
-                  {data.projects[0].technologies ? (
-                    <View style={styles.techRow}>
-                      <Text style={styles.techText}>
-                        <Text style={styles.techBold}>Technologies: </Text>
-                        {data.projects[0].technologies}
-                      </Text>
-                    </View>
-                  ) : null}
-                </View>
-              </View>
-
-              {data.projects.slice(1).map((proj, index) => (
-                <View key={index} style={styles.item} minPresenceAhead={30}>
-                  <View style={styles.itemHeader}>
-                    <Text style={styles.itemTitle}>{proj.title}</Text>
-                    {proj.link ? (
-                      <Text style={[styles.text, { color: BLUE }]}>{proj.link}</Text>
-                    ) : null}
-                  </View>
-                  <RichText text={proj.description} style={styles.text} />
-                  {proj.technologies ? (
-                    <View style={styles.techRow}>
-                      <Text style={styles.techText}>
-                        <Text style={styles.techBold}>Technologies: </Text>
-                        {proj.technologies}
-                      </Text>
-                    </View>
-                  ) : null}
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* ── Two-column grid: Education+Certifications | Languages+Achievements ── */}
-          {(
-            (data.education && data.education.length > 0) ||
-            (data.certifications && data.certifications.length > 0) ||
-            (data.languages && data.languages.length > 0) ||
-            (data.achievements && data.achievements.length > 0) ||
-            (data.publications && data.publications.length > 0)
-          ) && (
-            <View style={styles.twoColGrid}>
-              {/* Left column */}
-              <View style={styles.twoColLeft}>
-                {data.education && data.education.length > 0 && (
-                  <View style={[styles.section, { marginBottom: 18 }]}>
-                    <SectionTitle label="Education" />
-                    {data.education.map((edu, index) => (
-                      <View key={index} style={styles.eduItem} minPresenceAhead={20}>
-                        <Text style={styles.eduDegree}>{edu.degree}</Text>
-                        <Text style={styles.eduInstitution}>{edu.institution}</Text>
-                        <Text style={styles.eduDates}>{edu.dates}</Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-
-                {data.certifications && data.certifications.length > 0 && (
-                  <View style={styles.section}>
-                    <SectionTitle label="Certifications" />
-                    {data.certifications.map((cert, index) => (
-                      <View key={index} style={styles.eduItem} minPresenceAhead={20}>
-                        <Text style={styles.eduDegree}>{cert.title}</Text>
-                        <Text style={styles.eduDates}>
-                          {cert.issuer}{cert.date ? ` · ${cert.date}` : ''}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-
-              {/* Right column */}
-              <View style={styles.twoColRight}>
-                {data.languages && data.languages.length > 0 && (
-                  <View style={[styles.section, { marginBottom: 18 }]}>
-                    <SectionTitle label="Languages" />
-                    {data.languages.map((lang, index) => (
-                      <View key={index} style={styles.listItem}>
-                        <Text style={styles.bullet}>•</Text>
-                        <Text style={styles.listItemText}>
-                          <Text style={{ fontWeight: 'bold' }}>{lang.language}: </Text>
-                          {lang.level}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-
-                {data.achievements && data.achievements.length > 0 && (
-                  <View style={[styles.section, { marginBottom: 18 }]}>
-                    <SectionTitle label="Achievements" />
-                    {data.achievements.map((item, index) => (
-                      <View key={index} style={styles.listItem}>
-                        <Text style={styles.bullet}>•</Text>
-                        <RichText text={item} style={styles.listItemText} />
-                      </View>
-                    ))}
-                  </View>
-                )}
-
-                {data.publications && data.publications.length > 0 && (
-                  <View style={styles.section}>
-                    <SectionTitle label="Publications" />
-                    {data.publications.map((pub, index) => (
-                      <View key={index} style={{ marginBottom: 8 }} minPresenceAhead={20}>
-                        <Text style={styles.eduDegree}>{pub.title}</Text>
-                        {pub.details ? (
-                          <Text style={[styles.text, { color: TEXT_MUTED }]}>{pub.details}</Text>
-                        ) : null}
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-            </View>
-          )}
         </View>
 
-        {/* Footer — fixed on every page, absolutely pinned to the bottom edge */}
-        <Image
-          fixed
-          src={footerUrl}
-          style={[styles.footerImage, {
-            position: 'absolute',
-            bottom: -40,   // counteract the page paddingBottom so image sits at the true page edge
-            left: 0,
-          }]}
-        />
+        {/* Footer on page 1 only if there is no second page */}
+        {!hasSecondPage && (
+          <Image fixed src={footerUrl} style={styles.footerFixed} />
+        )}
       </Page>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          PAGE 2+ — Experience, Projects, Education/Languages, etc.
+          Footer is fixed on every page of this Page component (pages 2, 3, …)
+          ══════════════════════════════════════════════════════════════════════ */}
+      {hasSecondPage && (
+        <Page size="A4" style={styles.page2}>
+          <View style={styles.contentPage2}>
+
+            {/* ── Experience ── */}
+            {data.experience && data.experience.length > 0 && (
+              <View style={styles.section}>
+                <View wrap={false}>
+                  <SectionTitle label="Job Experience" />
+                  <ExperienceItem exp={data.experience[0]} />
+                </View>
+                {data.experience.slice(1).map((exp, index) => (
+                  <View key={index} minPresenceAhead={40}>
+                    <ExperienceItem exp={exp} />
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* ── Projects ── */}
+            {data.projects && data.projects.length > 0 && (
+              <View style={styles.section}>
+                <View wrap={false}>
+                  <SectionTitle label="Projects" />
+                  <View style={styles.item}>
+                    <View style={styles.itemHeader}>
+                      <Text style={styles.itemTitle}>{data.projects[0].title}</Text>
+                      {data.projects[0].link ? (
+                        <Text style={[styles.text, { color: BLUE }]}>{data.projects[0].link}</Text>
+                      ) : null}
+                    </View>
+                    <RichText text={data.projects[0].description} style={styles.text} />
+                    {data.projects[0].technologies ? (
+                      <View style={styles.techRow}>
+                        <Text style={styles.techText}>
+                          <Text style={styles.techBold}>Technologies: </Text>
+                          {data.projects[0].technologies}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </View>
+                {data.projects.slice(1).map((proj, index) => (
+                  <View key={index} style={styles.item} minPresenceAhead={30}>
+                    <View style={styles.itemHeader}>
+                      <Text style={styles.itemTitle}>{proj.title}</Text>
+                      {proj.link ? (
+                        <Text style={[styles.text, { color: BLUE }]}>{proj.link}</Text>
+                      ) : null}
+                    </View>
+                    <RichText text={proj.description} style={styles.text} />
+                    {proj.technologies ? (
+                      <View style={styles.techRow}>
+                        <Text style={styles.techText}>
+                          <Text style={styles.techBold}>Technologies: </Text>
+                          {proj.technologies}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* ── Two-column grid: Education+Certifications | Languages+Achievements+Publications ── */}
+            {(
+              (data.education && data.education.length > 0) ||
+              (data.certifications && data.certifications.length > 0) ||
+              (data.languages && data.languages.length > 0) ||
+              (data.achievements && data.achievements.length > 0) ||
+              (data.publications && data.publications.length > 0)
+            ) && (
+              <View style={styles.twoColGrid}>
+                {/* Left column */}
+                <View style={styles.twoColLeft}>
+                  {data.education && data.education.length > 0 && (
+                    <View style={[styles.section, { marginBottom: 18 }]}>
+                      <SectionTitle label="Education" />
+                      {data.education.map((edu, index) => (
+                        <View key={index} style={styles.eduItem} minPresenceAhead={20}>
+                          <Text style={styles.eduDegree}>{edu.degree}</Text>
+                          <Text style={styles.eduInstitution}>{edu.institution}</Text>
+                          <Text style={styles.eduDates}>{edu.dates}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                  {data.certifications && data.certifications.length > 0 && (
+                    <View style={styles.section}>
+                      <SectionTitle label="Certifications" />
+                      {data.certifications.map((cert, index) => (
+                        <View key={index} style={styles.eduItem} minPresenceAhead={20}>
+                          <Text style={styles.eduDegree}>{cert.title}</Text>
+                          <Text style={styles.eduDates}>
+                            {cert.issuer}{cert.date ? ` · ${cert.date}` : ''}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+
+                {/* Right column */}
+                <View style={styles.twoColRight}>
+                  {data.languages && data.languages.length > 0 && (
+                    <View style={[styles.section, { marginBottom: 18 }]}>
+                      <SectionTitle label="Languages" />
+                      {data.languages.map((lang, index) => (
+                        <View key={index} style={styles.listItem}>
+                          <Text style={styles.bullet}>•</Text>
+                          <Text style={styles.listItemText}>
+                            <Text style={{ fontWeight: 'bold' }}>{lang.language}: </Text>
+                            {lang.level}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                  {data.achievements && data.achievements.length > 0 && (
+                    <View style={[styles.section, { marginBottom: 18 }]}>
+                      <SectionTitle label="Achievements" />
+                      {data.achievements.map((item, index) => (
+                        <View key={index} style={styles.listItem}>
+                          <Text style={styles.bullet}>•</Text>
+                          <RichText text={item} style={styles.listItemText} />
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                  {data.publications && data.publications.length > 0 && (
+                    <View style={styles.section}>
+                      <SectionTitle label="Publications" />
+                      {data.publications.map((pub, index) => (
+                        <View key={index} style={{ marginBottom: 8 }} minPresenceAhead={20}>
+                          <Text style={styles.eduDegree}>{pub.title}</Text>
+                          {pub.details ? (
+                            <Text style={[styles.text, { color: TEXT_MUTED }]}>{pub.details}</Text>
+                          ) : null}
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              </View>
+            )}
+
+          </View>
+
+          {/* Footer — fixed on every PDF page generated by this Page component (pages 2, 3, …) */}
+          <Image fixed src={footerUrl} style={styles.footerFixed} />
+        </Page>
+      )}
+
     </Document>
   );
 };
