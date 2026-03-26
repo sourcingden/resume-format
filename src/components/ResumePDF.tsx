@@ -33,7 +33,7 @@ const pageStyle = {
 
 const styles = StyleSheet.create({
   page1: { ...pageStyle },
-  page2: { ...pageStyle },
+  page2: { ...pageStyle, flexDirection: 'column' },
 
   headerImage: { width: '100%', marginTop: -PAGE_PADDING_TOP },
 
@@ -54,7 +54,8 @@ const styles = StyleSheet.create({
   contentPage2: {
     paddingHorizontal: CONTENT_H_PAD,
     paddingTop: 40,     // top margin since no header on page 2+
-    paddingBottom: 20,  // small bottom margin — footer is in the flow
+    paddingBottom: 20,
+    flexGrow: 1,        // stretches to fill available space → footer pinned to bottom
   },
 
   // ── Name / title block ──────────────────────────────────────────────────────
