@@ -18,26 +18,28 @@ const TEXT_BODY = '#374151';
 const TEXT_MUTED = '#6B7280';
 
 // ─── Shared page styles ───────────────────────────────────────────────────────
+const PAGE_V_PAD = 40;         // top/bottom padding on every page — creates page-break margins
 const CONTENT_H_PAD = 60;
-const CONTENT_V_PAD_TOP = 20;  // space between header image and first text block
+const CONTENT_V_PAD_TOP = 20;  // extra space between the header image and the first text block
 const CONTENT_V_PAD_BOTTOM = 16;
 
 const styles = StyleSheet.create({
-  // Page has zero padding — header & footer images bleed to the very edge
+  // paddingTop/Bottom apply to EVERY page — giving breathing room at page breaks.
+  // Header/footer use negative margins to bleed through this padding to the paper edge.
   page: {
-    paddingTop: 0,
-    paddingBottom: 0,
+    paddingTop: PAGE_V_PAD,
+    paddingBottom: PAGE_V_PAD,
     paddingHorizontal: 0,
     backgroundColor: '#FFFFFF',
     fontFamily: 'Helvetica',
     flexDirection: 'column',
   },
 
-  // Header sits flush at the top — no negative margin trick needed
-  headerImage: { width: '100%' },
+  // Negative marginTop cancels page paddingTop so the header bleeds to the very top on page 1
+  headerImage: { width: '100%', marginTop: -PAGE_V_PAD },
 
-  // Negative marginBottom pins the footer image hard to the bottom edge
-  footerImage: { width: '100%', marginBottom: -2 },
+  // Negative marginBottom cancels page paddingBottom so the footer bleeds to the very bottom
+  footerImage: { width: '100%', marginBottom: -PAGE_V_PAD },
 
   // Content area — owns all vertical breathing room.
   // flexGrow: 1 makes this expand on the last page, pushing the footer to the bottom.
