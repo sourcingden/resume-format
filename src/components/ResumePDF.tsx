@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 60,
     paddingTop: 20,
-    paddingBottom: 70,
+    paddingBottom: 80, // clearance so content never overlaps the fixed footer
   },
 
   // ── Name / title block ──────────────────────────────────────────────────────
@@ -409,11 +409,16 @@ export const ResumePDF = ({ data }: Props) => {
           )}
         </View>
 
-        {/* Spacer pushes footer to the bottom */}
-        <View style={{ flexGrow: 1 }} />
-
-        {/* Footer */}
-        <Image src={footerUrl} style={[styles.footerImage, { marginBottom: -40 }]} />
+        {/* Footer — fixed on every page, absolutely pinned to the bottom edge */}
+        <Image
+          fixed
+          src={footerUrl}
+          style={[styles.footerImage, {
+            position: 'absolute',
+            bottom: -40,   // counteract the page paddingBottom so image sits at the true page edge
+            left: 0,
+          }]}
+        />
       </Page>
     </Document>
   );
