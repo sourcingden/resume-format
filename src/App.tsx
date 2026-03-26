@@ -291,10 +291,9 @@ export default function App() {
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-24 max-w-md mx-auto">
             <Loader2 className="w-12 h-12 text-primary animate-spin mb-6" />
-            <h3 className="text-xl font-medium mb-2">Processing Resume</h3>
-            <p className="text-base text-primary font-semibold mb-6 h-6 transition-all duration-500">
+            <h3 className="text-xl font-semibold text-primary mb-6 h-8 transition-all duration-500 text-center">
               {progressText}
-            </p>
+            </h3>
             <Progress value={progress} className="w-full h-2 mb-2" />
             <div className="flex justify-end w-full text-xs text-muted-foreground">
               <span>{Math.round(progress)}%</span>
