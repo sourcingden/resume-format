@@ -32,15 +32,15 @@ const pageStyle = {
 };
 
 const styles = StyleSheet.create({
-  page1: { ...pageStyle, flexDirection: 'column' },
-  page2: { ...pageStyle, flexDirection: 'column' },
+  page1: { ...pageStyle },
+  page2: { ...pageStyle },
 
   headerImage: { width: '100%', marginTop: -PAGE_PADDING_TOP },
 
-  // Footer: fixed on every page of the SECOND <Page> component only
+  // Footer: positioned absolutely at bottom, rendered only on last page via render prop
   footerFixed: {
     position: 'absolute',
-    bottom: -PAGE_PADDING_BOTTOM,
+    bottom: 0,
     left: 0,
     width: '100%',
   },
@@ -49,14 +49,12 @@ const styles = StyleSheet.create({
   contentPage1: {
     paddingHorizontal: CONTENT_H_PAD,
     paddingTop: 20,
-    paddingBottom: 20,
-    flexGrow: 1,
+    paddingBottom: FOOTER_HEIGHT + 10,
   },
   contentPage2: {
     paddingHorizontal: CONTENT_H_PAD,
-    paddingTop: 40,     // top margin since no header on page 2+
-    paddingBottom: 20,
-    flexGrow: 1,        // stretches to fill available space → footer pinned to bottom
+    paddingTop: 40,
+    paddingBottom: FOOTER_HEIGHT + 10,
   },
 
   // ── Name / title block ──────────────────────────────────────────────────────
@@ -291,10 +289,16 @@ export const ResumePDF = ({ data }: Props) => {
           )}
         </View>
 
-        {/* Footer on page 1 only if there is no second page. Not fixed to avoid repetition. */}
-        {!hasSecondPage && (
-          <Image src={footerUrl} style={{ width: '100%' }} />
-        )}
+        {/* Footer: render only on the last page of the entire document */}
+        <View
+          fixed
+          style={styles.footerFixed}
+          render={({ pageNumber, totalPages }: { pageNumber: number; totalPages: number }) =>
+            pageNumber === totalPages ? (
+              <Image src={footerUrl} style={{ width: '100%' }} />
+            ) : null
+          }
+        />
       </Page>
 
       {/* ══════════════════════════════════════════════════════════════════════
@@ -449,8 +453,16 @@ export const ResumePDF = ({ data }: Props) => {
 
           </View>
 
-          {/* Footer — last in-flow element, appears once at the very end of the document */}
-          <Image src={footerUrl} style={{ width: '100%' }} />
+          {/* Footer: render only on the last page of the entire document */}
+          <View
+            fixed
+            style={styles.footerFixed}
+            render={({ pageNumber, totalPages }: { pageNumber: number; totalPages: number }) =>
+              pageNumber === totalPages ? (
+                <Image src={footerUrl} style={{ width: '100%' }} />
+              ) : null
+            }
+          />
         </Page>
       )}
 
