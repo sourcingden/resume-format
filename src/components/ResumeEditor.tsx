@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { ResumeData } from '../types';
-import { Plus, Trash2, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Eye, EyeOff } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -78,13 +78,45 @@ export function ResumeEditor({ data, onChange }: Props) {
     updateField(arrayField, newArray);
   };
 
+  const hidden = data.hiddenSections || [];
+  const isHidden = (section: string) => hidden.includes(section);
+  const toggleSection = (section: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = isHidden(section)
+      ? hidden.filter(s => s !== section)
+      : [...hidden, section];
+    updateField('hiddenSections', next);
+  };
+
+  const SectionToggle = ({ section }: { section: string }) => (
+    <Button
+      variant="ghost"
+      size="icon"
+      className={`ml-auto mr-2 h-7 w-7 shrink-0 transition-colors ${
+        isHidden(section)
+          ? 'text-muted-foreground/40 hover:text-muted-foreground'
+          : 'text-primary hover:text-primary/70'
+      }`}
+      onClick={(e) => toggleSection(section, e)}
+      title={isHidden(section) ? 'Show in resume' : 'Hide from resume'}
+    >
+      {isHidden(section) ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+    </Button>
+  );
+
   return (
     <div className="space-y-6 pb-20">
+      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+        <Eye className="w-3.5 h-3.5" /> Click the eye icon on any section to hide it from the resume.
+      </p>
       <Accordion type="multiple" defaultValue={["basicInfo"]} className="w-full space-y-4">
         
         {/* Basic Info */}
-        <AccordionItem value="basicInfo" className="border bg-card rounded-xl shadow-sm px-4">
-          <AccordionTrigger className="hover:no-underline font-semibold text-lg py-4">Basic Info</AccordionTrigger>
+        <AccordionItem value="basicInfo" className={`border bg-card rounded-xl shadow-sm px-4 ${isHidden('basicInfo') ? 'opacity-50' : ''}`}>
+          <AccordionTrigger className="hover:no-underline font-semibold text-lg py-4">
+            <span className="flex-1 text-left">Basic Info</span>
+            <SectionToggle section="basicInfo" />
+          </AccordionTrigger>
           <AccordionContent className="space-y-4 pb-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -122,8 +154,11 @@ export function ResumeEditor({ data, onChange }: Props) {
         </AccordionItem>
 
         {/* Skills */}
-        <AccordionItem value="skills" className="border bg-card rounded-xl shadow-sm px-4">
-          <AccordionTrigger className="hover:no-underline font-semibold text-lg py-4">Skills</AccordionTrigger>
+        <AccordionItem value="skills" className={`border bg-card rounded-xl shadow-sm px-4 ${isHidden('skills') ? 'opacity-50' : ''}`}>
+          <AccordionTrigger className="hover:no-underline font-semibold text-lg py-4">
+            <span className="flex-1 text-left">Skills</span>
+            <SectionToggle section="skills" />
+          </AccordionTrigger>
           <AccordionContent className="space-y-4 pb-4">
             {(data.skills || []).map((skill, index) => (
               <div key={index} className="p-4 bg-muted/20 border rounded-lg relative group transition-all hover:bg-muted/40">
@@ -168,8 +203,11 @@ export function ResumeEditor({ data, onChange }: Props) {
         </AccordionItem>
 
         {/* Experience */}
-        <AccordionItem value="experience" className="border bg-card rounded-xl shadow-sm px-4">
-          <AccordionTrigger className="hover:no-underline font-semibold text-lg py-4">Job Experience</AccordionTrigger>
+        <AccordionItem value="experience" className={`border bg-card rounded-xl shadow-sm px-4 ${isHidden('experience') ? 'opacity-50' : ''}`}>
+          <AccordionTrigger className="hover:no-underline font-semibold text-lg py-4">
+            <span className="flex-1 text-left">Job Experience</span>
+            <SectionToggle section="experience" />
+          </AccordionTrigger>
           <AccordionContent className="space-y-4 pb-4">
             {(data.experience || []).map((exp, index) => (
               <div key={index} className="p-4 bg-muted/20 border rounded-lg relative group transition-all hover:bg-muted/40 space-y-4">
@@ -230,8 +268,11 @@ export function ResumeEditor({ data, onChange }: Props) {
         </AccordionItem>
 
         {/* Education */}
-        <AccordionItem value="education" className="border bg-card rounded-xl shadow-sm px-4">
-          <AccordionTrigger className="hover:no-underline font-semibold text-lg py-4">Education</AccordionTrigger>
+        <AccordionItem value="education" className={`border bg-card rounded-xl shadow-sm px-4 ${isHidden('education') ? 'opacity-50' : ''}`}>
+          <AccordionTrigger className="hover:no-underline font-semibold text-lg py-4">
+            <span className="flex-1 text-left">Education</span>
+            <SectionToggle section="education" />
+          </AccordionTrigger>
           <AccordionContent className="space-y-4 pb-4">
             {(data.education || []).map((edu, index) => (
               <div key={index} className="p-4 bg-muted/20 border rounded-lg relative group transition-all hover:bg-muted/40 space-y-4">
@@ -272,8 +313,11 @@ export function ResumeEditor({ data, onChange }: Props) {
         </AccordionItem>
 
         {/* Languages */}
-        <AccordionItem value="languages" className="border bg-card rounded-xl shadow-sm px-4">
-          <AccordionTrigger className="hover:no-underline font-semibold text-lg py-4">Languages</AccordionTrigger>
+        <AccordionItem value="languages" className={`border bg-card rounded-xl shadow-sm px-4 ${isHidden('languages') ? 'opacity-50' : ''}`}>
+          <AccordionTrigger className="hover:no-underline font-semibold text-lg py-4">
+            <span className="flex-1 text-left">Languages</span>
+            <SectionToggle section="languages" />
+          </AccordionTrigger>
           <AccordionContent className="space-y-4 pb-4">
             {(data.languages || []).map((lang, index) => (
               <div key={index} className="p-4 bg-muted/20 border rounded-lg relative group transition-all hover:bg-muted/40 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -319,8 +363,11 @@ export function ResumeEditor({ data, onChange }: Props) {
         </AccordionItem>
 
         {/* Projects */}
-        <AccordionItem value="projects" className="border bg-card rounded-xl shadow-sm px-4">
-          <AccordionTrigger className="hover:no-underline font-semibold text-lg py-4">Projects</AccordionTrigger>
+        <AccordionItem value="projects" className={`border bg-card rounded-xl shadow-sm px-4 ${isHidden('projects') ? 'opacity-50' : ''}`}>
+          <AccordionTrigger className="hover:no-underline font-semibold text-lg py-4">
+            <span className="flex-1 text-left">Projects</span>
+            <SectionToggle section="projects" />
+          </AccordionTrigger>
           <AccordionContent className="space-y-4 pb-4">
             {(data.projects || []).map((proj, index) => (
               <div key={index} className="p-4 bg-muted/20 border rounded-lg relative group transition-all hover:bg-muted/40 space-y-4">
@@ -370,8 +417,11 @@ export function ResumeEditor({ data, onChange }: Props) {
         </AccordionItem>
 
         {/* Publications */}
-        <AccordionItem value="publications" className="border bg-card rounded-xl shadow-sm px-4">
-          <AccordionTrigger className="hover:no-underline font-semibold text-lg py-4">Publications</AccordionTrigger>
+        <AccordionItem value="publications" className={`border bg-card rounded-xl shadow-sm px-4 ${isHidden('publications') ? 'opacity-50' : ''}`}>
+          <AccordionTrigger className="hover:no-underline font-semibold text-lg py-4">
+            <span className="flex-1 text-left">Publications</span>
+            <SectionToggle section="publications" />
+          </AccordionTrigger>
           <AccordionContent className="space-y-4 pb-4">
             {(data.publications || []).map((pub, index) => (
               <div key={index} className="p-4 bg-muted/20 border rounded-lg relative group transition-all hover:bg-muted/40 space-y-4">
@@ -411,6 +461,91 @@ export function ResumeEditor({ data, onChange }: Props) {
               onClick={() => addArrayItem('publications', { title: '', details: '' })}
             >
               <Plus className="w-4 h-4 mr-2" /> Add Publication
+            </Button>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Achievements */}
+        <AccordionItem value="achievements" className={`border bg-card rounded-xl shadow-sm px-4 ${isHidden('achievements') ? 'opacity-50' : ''}`}>
+          <AccordionTrigger className="hover:no-underline font-semibold text-lg py-4">
+            <span className="flex-1 text-left">Achievements</span>
+            <SectionToggle section="achievements" />
+          </AccordionTrigger>
+          <AccordionContent className="space-y-4 pb-4">
+            {(data.achievements || []).map((item, index) => (
+              <div key={index} className="p-3 bg-muted/20 border rounded-lg relative group transition-all hover:bg-muted/40 flex items-start gap-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeArrayItem('achievements', index)}
+                  className="shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10 h-7 w-7"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+                <Input
+                  type="text"
+                  value={item}
+                  onChange={(e) => {
+                    const newArr = [...(data.achievements || [])];
+                    newArr[index] = e.target.value;
+                    updateField('achievements', newArr);
+                  }}
+                  placeholder="e.g. Winner of X Hackathon 2024"
+                  className="flex-1"
+                />
+              </div>
+            ))}
+            <Button
+              variant="outline"
+              className="w-full mt-2 border-dashed"
+              onClick={() => addArrayItem('achievements', '')}
+            >
+              <Plus className="w-4 h-4 mr-2" /> Add Achievement
+            </Button>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Certifications */}
+        <AccordionItem value="certifications" className={`border bg-card rounded-xl shadow-sm px-4 ${isHidden('certifications') ? 'opacity-50' : ''}`}>
+          <AccordionTrigger className="hover:no-underline font-semibold text-lg py-4">
+            <span className="flex-1 text-left">Certifications</span>
+            <SectionToggle section="certifications" />
+          </AccordionTrigger>
+          <AccordionContent className="space-y-4 pb-4">
+            {(data.certifications || []).map((cert, index) => (
+              <div key={index} className="p-4 bg-muted/20 border rounded-lg relative group transition-all hover:bg-muted/40 space-y-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeArrayItem('certifications', index)}
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+                <div className="space-y-3 pr-6 pt-2">
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">Title</Label>
+                    <Input type="text" value={cert.title} onChange={(e) => updateArrayItem('certifications', index, 'title', e.target.value)} placeholder="e.g. AWS Solutions Architect" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground">Issuer</Label>
+                      <Input type="text" value={cert.issuer} onChange={(e) => updateArrayItem('certifications', index, 'issuer', e.target.value)} placeholder="e.g. Amazon Web Services" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground">Date</Label>
+                      <Input type="text" value={cert.date} onChange={(e) => updateArrayItem('certifications', index, 'date', e.target.value)} placeholder="e.g. Jan 2024" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            <Button
+              variant="outline"
+              className="w-full mt-2 border-dashed"
+              onClick={() => addArrayItem('certifications', { title: '', issuer: '', date: '' })}
+            >
+              <Plus className="w-4 h-4 mr-2" /> Add Certification
             </Button>
           </AccordionContent>
         </AccordionItem>

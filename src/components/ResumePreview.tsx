@@ -7,6 +7,7 @@ interface Props {
 }
 
 export const ResumePreview = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
+  const hidden = data.hiddenSections || [];
   return (
     <>
       <style>{`
@@ -58,7 +59,7 @@ export const ResumePreview = forwardRef<HTMLDivElement, Props>(({ data }, ref) =
           </div>
 
           <div className="grid grid-cols-1 gap-10">
-            {data.hrSummary && (
+            {data.hrSummary && !hidden.includes('basicInfo') && (
               <div className="avoid-break bg-slate-50 p-6 rounded-lg border border-slate-100 shadow-sm">
                 <h3 className="text-xl font-bold uppercase tracking-wider text-slate-900 mb-4 flex items-center">
                   <span className="w-2 h-6 bg-blue-600 mr-3 rounded-sm"></span> HR Summary
@@ -67,7 +68,7 @@ export const ResumePreview = forwardRef<HTMLDivElement, Props>(({ data }, ref) =
               </div>
             )}
 
-            {data.skills && data.skills.length > 0 && (
+            {data.skills && data.skills.length > 0 && !hidden.includes('skills') && (
               <div className="avoid-break">
                  <h3 className="text-xl font-bold uppercase tracking-wider text-slate-900 mb-4 flex items-center">
                   <span className="w-2 h-6 bg-blue-600 mr-3 rounded-sm"></span> Skills
@@ -83,7 +84,7 @@ export const ResumePreview = forwardRef<HTMLDivElement, Props>(({ data }, ref) =
               </div>
             )}
 
-            {data.experience && data.experience.length > 0 && (
+            {data.experience && data.experience.length > 0 && !hidden.includes('experience') && (
               <div>
                  <h3 className="text-xl font-bold uppercase tracking-wider text-slate-900 mb-6 flex items-center">
                   <span className="w-2 h-6 bg-blue-600 mr-3 rounded-sm"></span> Job Experience
@@ -124,7 +125,7 @@ export const ResumePreview = forwardRef<HTMLDivElement, Props>(({ data }, ref) =
               </div>
             )}
 
-            {data.projects && data.projects.length > 0 && (
+            {data.projects && data.projects.length > 0 && !hidden.includes('projects') && (
               <div>
                 <h3 className="text-xl font-bold uppercase tracking-wider text-slate-900 mb-6 flex items-center">
                   <span className="w-2 h-6 bg-blue-600 mr-3 rounded-sm"></span> Projects
@@ -154,7 +155,7 @@ export const ResumePreview = forwardRef<HTMLDivElement, Props>(({ data }, ref) =
 
             <div className="grid grid-cols-2 gap-8">
               <div className="space-y-8">
-                {data.education && data.education.length > 0 && (
+                {data.education && data.education.length > 0 && !hidden.includes('education') && (
                   <div className="avoid-break">
                     <h3 className="text-xl font-bold uppercase tracking-wider text-slate-900 mb-6 flex items-center">
                       <span className="w-2 h-6 bg-blue-600 mr-3 rounded-sm"></span> Education
@@ -171,7 +172,7 @@ export const ResumePreview = forwardRef<HTMLDivElement, Props>(({ data }, ref) =
                   </div>
                 )}
                 
-                {data.certifications && data.certifications.length > 0 && (
+                {data.certifications && data.certifications.length > 0 && !hidden.includes('certifications') && (
                   <div className="avoid-break">
                     <h3 className="text-xl font-bold uppercase tracking-wider text-slate-900 mb-6 flex items-center">
                       <span className="w-2 h-6 bg-blue-600 mr-3 rounded-sm"></span> Certifications
@@ -191,7 +192,7 @@ export const ResumePreview = forwardRef<HTMLDivElement, Props>(({ data }, ref) =
               </div>
 
               <div className="space-y-8">
-                {data.languages && data.languages.length > 0 && (
+                {data.languages && data.languages.length > 0 && !hidden.includes('languages') && (
                   <div className="avoid-break">
                     <h3 className="text-xl font-bold uppercase tracking-wider text-slate-900 mb-6 flex items-center">
                       <span className="w-2 h-6 bg-blue-600 mr-3 rounded-sm"></span> Languages
@@ -207,7 +208,7 @@ export const ResumePreview = forwardRef<HTMLDivElement, Props>(({ data }, ref) =
                   </div>
                 )}
 
-                {data.achievements && data.achievements.length > 0 && (
+                {data.achievements && data.achievements.length > 0 && !hidden.includes('achievements') && (
                   <div className="avoid-break">
                     <h3 className="text-xl font-bold uppercase tracking-wider text-slate-900 mb-6 flex items-center">
                       <span className="w-2 h-6 bg-blue-600 mr-3 rounded-sm"></span> Achievements
@@ -220,7 +221,7 @@ export const ResumePreview = forwardRef<HTMLDivElement, Props>(({ data }, ref) =
                   </div>
                 )}
 
-                {data.publications && data.publications.length > 0 && (
+                {data.publications && data.publications.length > 0 && !hidden.includes('publications') && (
                   <div className="avoid-break">
                     <h3 className="text-xl font-bold uppercase tracking-wider text-slate-900 mb-6 flex items-center">
                       <span className="w-2 h-6 bg-blue-600 mr-3 rounded-sm"></span> Publications

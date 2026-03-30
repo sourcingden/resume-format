@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const resumeSchema = z.object({
   analysis: z.string().default(''),
+  hiddenSections: z.array(z.string()).default([]),
   jobTitle: z.string().default('Unknown Title'),
   name: z.string().default('Unknown Name'),
   hrSummary: z.string().default(''),

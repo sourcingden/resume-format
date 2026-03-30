@@ -228,6 +228,7 @@ interface Props {
 }
 
 export const ResumePDF = ({ data }: Props) => {
+  const hidden = data.hiddenSections || [];
   const currentPath = window.location.origin + window.location.pathname;
   const headerUrl = new URL(import.meta.env.BASE_URL + 'header.png', currentPath).href;
   const footerUrl = new URL(import.meta.env.BASE_URL + 'footer.png', currentPath).href;
@@ -245,7 +246,7 @@ export const ResumePDF = ({ data }: Props) => {
           <Text style={styles.name}>{data.name}</Text>
 
           {/* ── HR Summary ── */}
-          {data.hrSummary && (
+          {data.hrSummary && !hidden.includes('basicInfo') && (
             <View style={styles.section}>
               <SectionTitle label="HR Summary" />
               <RichText text={data.hrSummary} style={styles.text} />
@@ -253,7 +254,7 @@ export const ResumePDF = ({ data }: Props) => {
           )}
 
           {/* ── Skills ── */}
-          {data.skills && data.skills.length > 0 && (
+          {data.skills && data.skills.length > 0 && !hidden.includes('skills') && (
             <View style={styles.section}>
               <SectionTitle label="Skills" />
               {data.skills.map((skill, index) => (
@@ -269,7 +270,7 @@ export const ResumePDF = ({ data }: Props) => {
           )}
 
           {/* ── Experience ── */}
-          {data.experience && data.experience.length > 0 && (
+          {data.experience && data.experience.length > 0 && !hidden.includes('experience') && (
             <View style={styles.section}>
               <View wrap={false}>
                 <SectionTitle label="Job Experience" />
@@ -284,7 +285,7 @@ export const ResumePDF = ({ data }: Props) => {
           )}
 
           {/* ── Projects ── */}
-          {data.projects && data.projects.length > 0 && (
+          {data.projects && data.projects.length > 0 && !hidden.includes('projects') && (
             <View style={styles.section}>
               <View wrap={false}>
                 <SectionTitle label="Projects" />
@@ -330,16 +331,16 @@ export const ResumePDF = ({ data }: Props) => {
 
           {/* ── Two-column grid: Education+Certifications | Languages+Achievements+Publications ── */}
           {(
-            (data.education && data.education.length > 0) ||
-            (data.certifications && data.certifications.length > 0) ||
-            (data.languages && data.languages.length > 0) ||
-            (data.achievements && data.achievements.length > 0) ||
-            (data.publications && data.publications.length > 0)
+            (data.education && data.education.length > 0 && !hidden.includes('education')) ||
+            (data.certifications && data.certifications.length > 0 && !hidden.includes('certifications')) ||
+            (data.languages && data.languages.length > 0 && !hidden.includes('languages')) ||
+            (data.achievements && data.achievements.length > 0 && !hidden.includes('achievements')) ||
+            (data.publications && data.publications.length > 0 && !hidden.includes('publications'))
           ) && (
             <View style={styles.twoColGrid}>
               {/* Left column */}
               <View style={styles.twoColLeft}>
-                {data.education && data.education.length > 0 && (
+                {data.education && data.education.length > 0 && !hidden.includes('education') && (
                   <View style={[styles.section, { marginBottom: 18 }]}>
                     <SectionTitle label="Education" />
                     {data.education.map((edu, index) => (
@@ -351,7 +352,7 @@ export const ResumePDF = ({ data }: Props) => {
                     ))}
                   </View>
                 )}
-                {data.certifications && data.certifications.length > 0 && (
+                {data.certifications && data.certifications.length > 0 && !hidden.includes('certifications') && (
                   <View style={styles.section}>
                     <SectionTitle label="Certifications" />
                     {data.certifications.map((cert, index) => (
@@ -368,7 +369,7 @@ export const ResumePDF = ({ data }: Props) => {
 
               {/* Right column */}
               <View style={styles.twoColRight}>
-                {data.languages && data.languages.length > 0 && (
+                {data.languages && data.languages.length > 0 && !hidden.includes('languages') && (
                   <View style={[styles.section, { marginBottom: 18 }]}>
                     <SectionTitle label="Languages" />
                     {data.languages.map((lang, index) => (
@@ -382,7 +383,7 @@ export const ResumePDF = ({ data }: Props) => {
                     ))}
                   </View>
                 )}
-                {data.achievements && data.achievements.length > 0 && (
+                {data.achievements && data.achievements.length > 0 && !hidden.includes('achievements') && (
                   <View style={[styles.section, { marginBottom: 18 }]}>
                     <SectionTitle label="Achievements" />
                     {data.achievements.map((item, index) => (
@@ -393,7 +394,7 @@ export const ResumePDF = ({ data }: Props) => {
                     ))}
                   </View>
                 )}
-                {data.publications && data.publications.length > 0 && (
+                {data.publications && data.publications.length > 0 && !hidden.includes('publications') && (
                   <View style={styles.section}>
                     <SectionTitle label="Publications" />
                     {data.publications.map((pub, index) => (
