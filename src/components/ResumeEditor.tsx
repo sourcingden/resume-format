@@ -369,6 +369,52 @@ export function ResumeEditor({ data, onChange }: Props) {
           </AccordionContent>
         </AccordionItem>
 
+        {/* Publications */}
+        <AccordionItem value="publications" className="border bg-card rounded-xl shadow-sm px-4">
+          <AccordionTrigger className="hover:no-underline font-semibold text-lg py-4">Publications</AccordionTrigger>
+          <AccordionContent className="space-y-4 pb-4">
+            {(data.publications || []).map((pub, index) => (
+              <div key={index} className="p-4 bg-muted/20 border rounded-lg relative group transition-all hover:bg-muted/40 space-y-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeArrayItem('publications', index)}
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+                <div className="space-y-4 pr-6 pt-2">
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">Title</Label>
+                    <Input
+                      type="text"
+                      value={pub.title}
+                      onChange={(e) => updateArrayItem('publications', index, 'title', e.target.value)}
+                      placeholder="e.g. Deep Learning for NLP"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">Details</Label>
+                    <RichTextarea
+                      value={pub.details}
+                      onChange={(e) => updateArrayItem('publications', index, 'details', e.target.value)}
+                      className="h-20 resize-none"
+                      placeholder="Authors, journal/conference, year, DOI, etc."
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+            <Button
+              variant="outline"
+              className="w-full mt-2 border-dashed"
+              onClick={() => addArrayItem('publications', { title: '', details: '' })}
+            >
+              <Plus className="w-4 h-4 mr-2" /> Add Publication
+            </Button>
+          </AccordionContent>
+        </AccordionItem>
+
       </Accordion>
     </div>
   );
