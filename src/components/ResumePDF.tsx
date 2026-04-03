@@ -38,8 +38,15 @@ const styles = StyleSheet.create({
   // Negative marginTop cancels page paddingTop so the header bleeds to the very top on page 1
   headerImage: { width: '100%', marginTop: -PAGE_V_PAD },
 
-  // Negative marginBottom cancels page paddingBottom so the footer bleeds to the very bottom
-  footerImage: { width: '100%', marginBottom: -PAGE_V_PAD },
+  // Footer is positioned absolute at the bottom of the page box.
+  footerContainer: {
+    position: 'absolute',
+    bottom: -PAGE_V_PAD,
+    left: 0,
+    right: 0,
+    width: '100%',
+  },
+  footerImage: { width: '100%' },
 
   // Content area — owns all vertical breathing room.
   // flexGrow: 1 makes this expand on the last page, pushing the footer to the bottom.
@@ -390,9 +397,13 @@ export const ResumePDF = ({ data }: Props) => {
           )}
         </View>
 
-        {/* Footer: in-flow (no `fixed`), so it renders only once at the very end.
-            The content View above has flexGrow:1 which pushes this to the bottom. */}
-        <Image src={footerUrl} style={styles.footerImage} />
+        {/* Footer: absolute positioned to the bottom, rendering only on the last page.
+            Using render prop ensures it's correctly placed at the end of the document. */}
+        <View fixed style={styles.footerContainer} render={({ pageNumber, totalPages }) => (
+          pageNumber === totalPages ? (
+            <Image src={footerUrl} style={styles.footerImage} />
+          ) : <View />
+        )} />
 
       </Page>
     </Document>
