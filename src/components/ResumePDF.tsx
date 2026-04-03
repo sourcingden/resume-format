@@ -186,7 +186,7 @@ const RichText = ({ text, style }: { text: string; style: object }) => {
 // ─── Experience entry ────────────────────────────────────────────────────────
 
 const ExperienceItem = ({ exp }: { exp: ResumeData['experience'][0] }) => (
-  <View style={styles.item}>
+  <View style={styles.item} wrap={false}>
     <View style={styles.itemHeader}>
       <Text style={styles.itemTitle}>{exp.role}</Text>
       {exp.dates ? <Text style={styles.itemDates}>{exp.dates}</Text> : null}
@@ -247,7 +247,7 @@ export const ResumePDF = ({ data }: Props) => {
 
           {/* ── HR Summary ── */}
           {data.hrSummary && !hidden.includes('basicInfo') && (
-            <View style={styles.section}>
+            <View style={styles.section} wrap={false}>
               <SectionTitle label="HR Summary" />
               <RichText text={data.hrSummary} style={styles.text} />
             </View>
@@ -255,7 +255,7 @@ export const ResumePDF = ({ data }: Props) => {
 
           {/* ── Skills ── */}
           {data.skills && data.skills.length > 0 && !hidden.includes('skills') && (
-            <View style={styles.section}>
+            <View style={styles.section} wrap={false}>
               <SectionTitle label="Skills" />
               {data.skills.map((skill, index) => (
                 <View key={index} style={styles.listItem}>
@@ -272,12 +272,9 @@ export const ResumePDF = ({ data }: Props) => {
           {/* ── Experience ── */}
           {data.experience && data.experience.length > 0 && !hidden.includes('experience') && (
             <View style={styles.section}>
-              <View wrap={false}>
-                <SectionTitle label="Job Experience" />
-                <ExperienceItem exp={data.experience[0]} />
-              </View>
-              {data.experience.slice(1).map((exp, index) => (
-                <View key={index} minPresenceAhead={40}>
+              <SectionTitle label="Job Experience" />
+              {data.experience.map((exp, index) => (
+                <View key={index}>
                   <ExperienceItem exp={exp} />
                 </View>
               ))}
@@ -287,28 +284,9 @@ export const ResumePDF = ({ data }: Props) => {
           {/* ── Projects ── */}
           {data.projects && data.projects.length > 0 && !hidden.includes('projects') && (
             <View style={styles.section}>
-              <View wrap={false}>
-                <SectionTitle label="Projects" />
-                <View style={styles.item}>
-                  <View style={styles.itemHeader}>
-                    <Text style={styles.itemTitle}>{data.projects[0].title}</Text>
-                    {data.projects[0].link ? (
-                      <Text style={[styles.text, { color: BLUE }]}>{data.projects[0].link}</Text>
-                    ) : null}
-                  </View>
-                  <RichText text={data.projects[0].description} style={styles.text} />
-                  {data.projects[0].technologies ? (
-                    <View style={styles.techRow}>
-                      <Text style={styles.techText}>
-                        <Text style={styles.techBold}>Technologies: </Text>
-                        {data.projects[0].technologies}
-                      </Text>
-                    </View>
-                  ) : null}
-                </View>
-              </View>
-              {data.projects.slice(1).map((proj, index) => (
-                <View key={index} style={styles.item} minPresenceAhead={30}>
+              <SectionTitle label="Projects" />
+              {data.projects.map((proj, index) => (
+                <View key={index} style={styles.item} wrap={false}>
                   <View style={styles.itemHeader}>
                     <Text style={styles.itemTitle}>{proj.title}</Text>
                     {proj.link ? (
@@ -337,14 +315,14 @@ export const ResumePDF = ({ data }: Props) => {
             (data.achievements && data.achievements.length > 0 && !hidden.includes('achievements')) ||
             (data.publications && data.publications.length > 0 && !hidden.includes('publications'))
           ) && (
-            <View style={styles.twoColGrid}>
+            <View style={styles.twoColGrid} wrap={false}>
               {/* Left column */}
               <View style={styles.twoColLeft}>
                 {data.education && data.education.length > 0 && !hidden.includes('education') && (
                   <View style={[styles.section, { marginBottom: 18 }]}>
                     <SectionTitle label="Education" />
                     {data.education.map((edu, index) => (
-                      <View key={index} style={styles.eduItem} minPresenceAhead={20}>
+                      <View key={index} style={styles.eduItem}>
                         <Text style={styles.eduDegree}>{edu.degree}</Text>
                         <Text style={styles.eduInstitution}>{edu.institution}</Text>
                         <Text style={styles.eduDates}>{edu.dates}</Text>
@@ -356,7 +334,7 @@ export const ResumePDF = ({ data }: Props) => {
                   <View style={styles.section}>
                     <SectionTitle label="Certifications" />
                     {data.certifications.map((cert, index) => (
-                      <View key={index} style={styles.eduItem} minPresenceAhead={20}>
+                      <View key={index} style={styles.eduItem}>
                         <Text style={styles.eduDegree}>{cert.title}</Text>
                         <Text style={styles.eduDates}>
                           {cert.issuer}{cert.date ? ` · ${cert.date}` : ''}
@@ -398,7 +376,7 @@ export const ResumePDF = ({ data }: Props) => {
                   <View style={styles.section}>
                     <SectionTitle label="Publications" />
                     {data.publications.map((pub, index) => (
-                      <View key={index} style={{ marginBottom: 8 }} minPresenceAhead={20}>
+                      <View key={index} style={{ marginBottom: 8 }}>
                         <Text style={styles.eduDegree}>{pub.title}</Text>
                         {pub.details ? (
                           <Text style={[styles.text, { color: TEXT_MUTED }]}>{pub.details}</Text>
