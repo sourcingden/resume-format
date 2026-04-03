@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
     paddingBottom: PAGE_V_PAD,
     paddingHorizontal: 0,
     backgroundColor: '#FFFFFF',
-    fontFamily: 'Helvetica',
+    fontFamily: 'Exo 2',
     flexDirection: 'column',
   },
 
@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
   // Footer is positioned absolute at the bottom of the page box.
   footerContainer: {
     position: 'absolute',
-    bottom: -PAGE_V_PAD,
+    bottom: 0,
     left: 0,
     right: 0,
     width: '100%',
