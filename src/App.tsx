@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Upload, FileText, Download, Edit2, Check, Copy, ArrowLeft, History } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Upload, FileText, Download, Edit2, Check, Copy, ArrowLeft, History, Share2 } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import { ResumeData } from './types';
 import { parseResume } from './services/parserService';
@@ -7,6 +7,7 @@ import { extractTextFromPDF } from './utils/pdfParser';
 import { ResumePreview } from './components/ResumePreview';
 import { ResumeEditor } from './components/ResumeEditor';
 import { ResumePDF } from './components/ResumePDF';
+import { encodeResumeToURL, decodeResumeFromURL } from './utils/shareUtils';
 
 // Shadcn UI components
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,34 @@ export default function App() {
   const { history, saveToHistory, clearHistory } = useHistory();
 
   const componentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const cvParam = params.get('cv');
+    if (cvParam) {
+      const data = decodeResumeFromURL(cvParam);
+      if (data) {
+        setResumeData(data);
+        toast.success('Resume loaded from shared link!');
+        // Clean up URL for better UX
+        window.history.replaceState({}, '', window.location.pathname);
+      } else {
+        toast.error('Failed to load resume from link. The link might be invalid or corrupted.');
+      }
+    }
+  }, []);
+
+  const handleShareLink = async () => {
+    if (!resumeData) return;
+    try {
+      const encoded = encodeResumeToURL(resumeData);
+      const shareUrl = `${window.location.origin}${window.location.pathname}?cv=${encoded}`;
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success('Share link copied to clipboard!');
+    } catch (err) {
+      toast.error('Failed to generate share link.');
+    }
+  };
 
   const handlePrint = async () => {
     if (!resumeData) return;
@@ -219,6 +248,10 @@ export default function App() {
               <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
                 {isEditing ? <Check className="w-4 h-4 mr-2" /> : <Edit2 className="w-4 h-4 mr-2" />}
                 <span>{isEditing ? 'Done' : 'Edit'}</span>
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleShareLink} title="Share Link">
+                <Share2 className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Share</span>
               </Button>
               <Button variant="outline" size="sm" onClick={handleCopy}>
                 {isCopied ? <Check className="w-4 h-4 mr-2 text-green-500" /> : <Copy className="w-4 h-4 mr-2" />}
