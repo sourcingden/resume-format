@@ -105,6 +105,7 @@ Rules:
 13. If a field is missing, use an empty string or empty array as appropriate.
 14. Stay strictly grounded in the source text — do NOT hallucinate or invent details not present.
 15. Ensure the output is strictly valid JSON. No markdown code blocks, just the JSON.
+16. CRITICAL: ALL output fields MUST be in English. If the resume contains text in any other language (Ukrainian, Russian, etc.), translate every field — including language names, proficiency levels (e.g. "Рідна мова" → "Native", "Вище середнього" → "Upper Intermediate"), job titles, company names, descriptions, responsibilities, degree names, institution names, achievements, and any other content — into English before outputting. The final JSON must contain zero non-English text.
 `;
 
 const MAX_RETRIES = 3;
