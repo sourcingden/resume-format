@@ -192,6 +192,14 @@ function selectModel(text: string): { model: string; label: string } {
 }
 
 /**
+ * Build extra params — deepseek-reasoner does not support temperature.
+ */
+function modelParams(model: string, temperature: number): Record<string, unknown> {
+  if (model === 'deepseek-reasoner') return {};
+  return { temperature };
+}
+
+/**
  * Format Zod validation errors into a compact human-readable string
  * that can be fed back to the LLM as a correction prompt.
  */
@@ -247,7 +255,7 @@ export async function parseResume(
         stream: true,
         response_format: { type: 'json_object' },
         max_tokens: 8192,
-        temperature: 0.6,
+        ...modelParams(model, 0.6),
       });
 
       let textResponse = '';
@@ -287,7 +295,8 @@ export async function parseResume(
             model,
             messages: [
               ...messages,
-              { role: 'assistant', content: textResponse },
+              // Use only plain content (no reasoning_content) for multi-turn compatibility
+              { role: 'assistant', content: textResponse || '{}' },
               {
                 role: 'user',
                 content: `The JSON you returned failed schema validation with these errors:\n${errorSummary}\n\nPlease return the corrected JSON object only, fixing all listed issues.`,
@@ -296,7 +305,7 @@ export async function parseResume(
             stream: true,
             response_format: { type: 'json_object' },
             max_tokens: 8192,
-            temperature: 0.4,
+            ...modelParams(model, 0.4),
           });
 
           let correctedResponse = '';
@@ -329,8 +338,15 @@ export async function parseResume(
         continue;
       }
 
+      const errMsg = (error instanceof Error) ? error.message : String(error);
       console.error('Error parsing resume with DeepSeek or validating structure:', error);
-      throw new Error('Failed to parse resume using AI or invalid data format returned. Please try again.');
+      if (isLastAttempt) {
+        throw new Error(`Failed to parse resume: ${errMsg}`);
+      }
+      // Retry on non-rate-limit transient errors
+      onProgress?.(10, `Retrying… (attempt ${attempt + 1}/${MAX_RETRIES})`);
+      await sleep(2000);
+      continue;
     }
   }
 
