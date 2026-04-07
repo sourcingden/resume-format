@@ -43,6 +43,17 @@ export const resumeSchema = z.object({
     technologies: z.string().default(''),
     link: z.string().default('')
   })).default([]),
+  sectionOrder: z.array(z.string()).default([
+    'basicInfo',
+    'skills',
+    'experience',
+    'projects',
+    'education',
+    'certifications',
+    'languages',
+    'achievements',
+    'publications'
+  ]),
 });
 
 export type ResumeData = z.infer<typeof resumeSchema>;

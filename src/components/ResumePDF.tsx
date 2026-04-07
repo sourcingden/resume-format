@@ -19,6 +19,7 @@ const TEXT_MUTED = '#6B7280';
 
 // ─── Shared page styles ───────────────────────────────────────────────────────
 const PAGE_V_PAD = 40;         // top/bottom padding on every page — creates page-break margins
+const FOOTER_HEIGHT = 102;     // footer.png: 1632×280px → 280/1632*595 ≈ 102pt at A4 width
 const CONTENT_H_PAD = 60;
 const CONTENT_V_PAD_TOP = 20;  // extra space between the header image and the first text block
 const CONTENT_V_PAD_BOTTOM = 16;
@@ -28,7 +29,8 @@ const styles = StyleSheet.create({
   // Header/footer use negative margins to bleed through this padding to the paper edge.
   page: {
     paddingTop: PAGE_V_PAD,
-    paddingBottom: PAGE_V_PAD,
+    // Reserve space at the bottom for the fixed footer so content doesn't overlap it
+    paddingBottom: PAGE_V_PAD + FOOTER_HEIGHT,
     paddingHorizontal: 0,
     backgroundColor: '#FFFFFF',
     fontFamily: 'Exo 2',
@@ -38,13 +40,17 @@ const styles = StyleSheet.create({
   // Negative marginTop cancels page paddingTop so the header bleeds to the very top on page 1
   headerImage: { width: '100%', marginTop: -PAGE_V_PAD },
 
-  // Negative marginBottom cancels page paddingBottom so the footer bleeds to the very bottom
-  footerImage: { width: '100%', marginBottom: -PAGE_V_PAD },
+  // Fixed footer pinned to the very bottom of every page (we filter to last-page-only via render prop)
+  footerImage: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    width: '100%',
+  },
 
-  // Content area — owns all vertical breathing room.
-  // flexGrow: 1 makes this expand on the last page, pushing the footer to the bottom.
+  // Content area
   content: {
-    flexGrow: 1,
     paddingHorizontal: CONTENT_H_PAD,
     paddingTop: CONTENT_V_PAD_TOP,
     paddingBottom: CONTENT_V_PAD_BOTTOM,
@@ -390,9 +396,16 @@ export const ResumePDF = ({ data }: Props) => {
           )}
         </View>
 
-        {/* Footer: in-flow after flexGrow:1 content, so it's naturally pushed
-            to the very bottom of the last page. marginBottom bleeds to paper edge. */}
-        <Image src={footerUrl} style={styles.footerImage} />
+        {/* Footer: fixed at the bottom, shown only on the last page */}
+        <View
+          fixed
+          style={styles.footerImage}
+          render={({ pageNumber, totalPages }) =>
+            pageNumber === totalPages
+              ? <Image src={footerUrl} style={{ width: '100%' }} />
+              : null
+          }
+        />
 
       </Page>
     </Document>
