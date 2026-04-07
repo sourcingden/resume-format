@@ -425,16 +425,8 @@ export const ResumePDF = ({ data }: Props) => {
           <View style={styles.footerSpacer} />
         </View>
 
-        {/* Footer: fixed, pinned to bottom, shown only on the last page */}
-        <View
-          fixed
-          style={styles.footerImage}
-          render={({ pageNumber, totalPages }) =>
-            pageNumber === totalPages
-              ? <Image src={footerUrl} style={{ width: '100%' }} />
-              : null
-          }
-        />
+        {/* Footer: fixed, pinned to bottom of every page */}
+        <Image fixed src={footerUrl} style={styles.footerImage} />
 
       </Page>
     </Document>

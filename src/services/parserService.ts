@@ -37,75 +37,41 @@ const THINKING_WORDS = [
 
 // ─── System prompt ─────────────────────────────────────────────────────────────
 const SYSTEM_PROMPT = `
-You are an expert resume parser. Your task is to extract structured data from the provided resume text.
-Return ONLY a valid JSON object matching the following TypeScript interface:
+You are an expert resume parser. Extract structured data from the provided resume text.
+Return ONLY a valid JSON object matching this interface:
 
 interface ResumeData {
-  analysis: string; // Step-by-step reasoning about the candidate's core expertise, identifying ambiguities, and planning the extraction. This acts as an implicit chain-of-thought to improve extraction fidelity.
   jobTitle: string;
   name: string;
-  hrSummary: string;
-  skills: {
-    category: string;
-    items: string[];
-  }[];
+  hrSummary: string; // 2-3 sentences max
+  skills: { category: string; items: string[] }[];
   experience: {
     role: string;
     company: string;
     dates: string;
-    description: string;
-    responsibilities: string[];
-    techStack: string; // Comma separated list of technologies used in this role
+    description: string; // 1 sentence max
+    responsibilities: string[]; // max 5 bullet points per role
+    techStack: string; // comma-separated
   }[];
-  education: {
-    degree: string;
-    institution: string;
-    dates: string;
-  }[];
-  languages: {
-    language: string;
-    level: string;
-  }[];
-  achievements: string[]; // Notable achievements, awards, or recognitions (each as a short string)
-  certifications: {
-    title: string;
-    issuer: string;
-    date: string;
-  }[];
-  publications: {
-    title: string;
-    details: string; // Authors, journal/conference, year, DOI, etc.
-  }[];
-  projects: {
-    title: string;
-    description: string;
-    technologies: string; // Comma separated list
-    link: string;
-  }[];
+  education: { degree: string; institution: string; dates: string }[];
+  languages: { language: string; level: string }[];
+  achievements: string[];
+  certifications: { title: string; issuer: string; date: string }[];
+  publications: { title: string; details: string }[];
+  projects: { title: string; description: string; technologies: string; link: string }[];
 }
 
 Rules:
-0. MUST provide detailed reasoning in the "analysis" field FIRST, before extracting other fields.
-1. Extract the name and current/target job title accurately.
-2. The hrSummary should be a brief professional overview (2-4 sentences).
-3. Group skills into meaningful categories (e.g., Programming Languages, Frameworks, Tools).
-4. For each experience entry:
-   - Identify the role, company, and dates (e.g., "May 2021 - Present").
-   - Extract a general description if available.
-   - List specific responsibilities as an array of strings.
-   - Extract the specific tech stack used in that role.
-5. Extract education history including degree, institution, and dates.
-6. Extract languages and proficiency levels.
-7. DO NOT extract any contact information (emails, phone numbers, LinkedIn, or other social links). Ensure candidate privacy.
-8. Extract achievements as a concise list of accomplishments, awards, or honours.
-9. Extract certifications with title, issuer, and date.
-10. Extract publications with title and bibliographic details.
-11. Extract projects with title, description, technologies used, and any links.
-12. IMPORTANT: When extracting "hrSummary", "description" (in experience), or projects' "description", you MUST use Markdown-style bolding (\`**text**\`) strictly for highlighting key technologies, massive achievements, or impact metrics (e.g., "\`**React, TypeScript**\`", "\`**+40% performance**\`").
-13. If a field is missing, use an empty string or empty array as appropriate.
-14. Stay strictly grounded in the source text — do NOT hallucinate or invent details not present.
-15. Ensure the output is strictly valid JSON. No markdown code blocks, just the JSON.
-16. CRITICAL: ALL output fields MUST be in English. If the resume contains text in any other language (Ukrainian, Russian, etc.), translate every field — including language names, proficiency levels (e.g. "Рідна мова" → "Native", "Вище середнього" → "Upper Intermediate"), job titles, company names, descriptions, responsibilities, degree names, institution names, achievements, and any other content — into English before outputting. The final JSON must contain zero non-English text.
+1. Extract name and job title accurately.
+2. Group skills into categories (e.g., Languages, Frameworks, Tools).
+3. Keep responsibilities concise — max 5 per role, one sentence each.
+4. DO NOT include contact information (emails, phones, social links).
+5. Use **bold** for key technologies and metrics in hrSummary and descriptions.
+6. Use empty string or empty array for missing fields.
+7. Stay grounded in source text — do NOT hallucinate.
+8. Output strictly valid JSON, no markdown fences.
+9. ALL fields MUST be in English. Translate any non-English content.
+10. Be concise — keep total output under 4000 tokens.
 `;
 
 const MAX_RETRIES = 3;
@@ -151,8 +117,61 @@ function sanitizeJson(raw: string): string {
 }
 
 /**
+ * Attempts to repair a truncated JSON string by closing unclosed strings,
+ * arrays, and objects. Best-effort — may still produce invalid JSON.
+ */
+function tryRepairTruncatedJson(truncated: string): string {
+  let repaired = truncated;
+
+  // If we're inside an unterminated string, close it
+  let inString = false;
+  let escape = false;
+  for (let i = 0; i < repaired.length; i++) {
+    const ch = repaired[i];
+    if (escape) { escape = false; continue; }
+    if (ch === '\\' && inString) { escape = true; continue; }
+    if (ch === '"') { inString = !inString; }
+  }
+  if (inString) {
+    // Trim back to last clean break if possible (e.g., comma, space)
+    const lastQuote = repaired.lastIndexOf('"');
+    if (lastQuote > 0) {
+      repaired = repaired.slice(0, lastQuote + 1);
+    } else {
+      repaired += '"';
+    }
+  }
+
+  // Remove any trailing comma before we close brackets
+  repaired = repaired.replace(/,\s*$/, '');
+
+  // Count unclosed braces and brackets
+  let braces = 0;
+  let brackets = 0;
+  inString = false;
+  escape = false;
+  for (let i = 0; i < repaired.length; i++) {
+    const ch = repaired[i];
+    if (escape) { escape = false; continue; }
+    if (ch === '\\' && inString) { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === '{') braces++;
+    else if (ch === '}') braces--;
+    else if (ch === '[') brackets++;
+    else if (ch === ']') brackets--;
+  }
+
+  // Close unclosed brackets then braces
+  for (let i = 0; i < brackets; i++) repaired += ']';
+  for (let i = 0; i < braces; i++) repaired += '}';
+
+  return repaired;
+}
+
+/**
  * Robustly extracts the first top-level JSON object from a model response.
- * Handles markdown fences, leading commentary, and trailing noise.
+ * Handles markdown fences, leading commentary, trailing noise, and truncation.
  */
 function extractJson(raw: string): string {
   const cleaned = sanitizeJson(raw);
@@ -176,7 +195,21 @@ function extractJson(raw: string): string {
     }
   }
 
-  throw new SyntaxError('JSON object in model response appears to be truncated.');
+  // JSON is truncated — attempt repair
+  console.warn('JSON response truncated — attempting repair…');
+  const truncatedJson = cleaned.slice(start);
+  const repaired = tryRepairTruncatedJson(truncatedJson);
+
+  // Verify the repaired JSON is parseable
+  try {
+    JSON.parse(repaired);
+    return repaired;
+  } catch {
+    throw new SyntaxError(
+      'JSON object in model response was truncated and could not be repaired. '
+      + 'The resume may be too complex. Try shortening it or removing some sections.'
+    );
+  }
 }
 
 /**
@@ -192,11 +225,11 @@ function selectModel(text: string): { model: string; label: string } {
 }
 
 /**
- * Build extra params — deepseek-reasoner does not support temperature.
+ * Build extra params — deepseek-reasoner does not support temperature or response_format.
  */
 function modelParams(model: string, temperature: number): Record<string, unknown> {
   if (model === 'deepseek-reasoner') return {};
-  return { temperature };
+  return { temperature, response_format: { type: 'json_object' } };
 }
 
 /**
@@ -253,7 +286,6 @@ export async function parseResume(
         model,
         messages,
         stream: true,
-        response_format: { type: 'json_object' },
         max_tokens: 8192,
         ...modelParams(model, 0.6),
       });
@@ -303,7 +335,6 @@ export async function parseResume(
               },
             ],
             stream: true,
-            response_format: { type: 'json_object' },
             max_tokens: 8192,
             ...modelParams(model, 0.4),
           });
