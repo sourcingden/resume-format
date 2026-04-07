@@ -27,10 +27,9 @@ const CONTENT_V_PAD_TOP = 20;
 const FOOTER_SPACER = FOOTER_HEIGHT + 16; // spacer inside content to prevent footer overlap
 
 const styles = StyleSheet.create({
-  // paddingBottom: 0 — footer space is handled by footerSpacer inside content
   page: {
     paddingTop: PAGE_V_PAD,
-    paddingBottom: 0,
+    paddingBottom: FOOTER_SPACER, // reserves footer space on every page
     paddingHorizontal: 0,
     backgroundColor: '#FFFFFF',
     fontFamily: 'Exo 2',
@@ -421,8 +420,6 @@ export const ResumePDF = ({ data }: Props) => {
             </View>
           ) : null}
 
-          {/* Spacer so content doesn't overlap the footer on the last page */}
-          <View style={styles.footerSpacer} />
         </View>
 
         {/* Footer: fixed, pinned to bottom of every page */}
