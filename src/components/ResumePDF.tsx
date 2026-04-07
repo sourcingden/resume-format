@@ -29,7 +29,7 @@ const FOOTER_SPACER = FOOTER_HEIGHT + 16; // spacer inside content to prevent fo
 const styles = StyleSheet.create({
   page: {
     paddingTop: PAGE_V_PAD,
-    paddingBottom: FOOTER_SPACER, // reserves footer space on every page
+    paddingBottom: FOOTER_HEIGHT + 8, // just enough to clear the fixed footer
     paddingHorizontal: 0,
     backgroundColor: '#FFFFFF',
     fontFamily: 'Exo 2',
