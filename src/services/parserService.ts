@@ -246,7 +246,7 @@ export async function parseResume(
         messages,
         stream: true,
         response_format: { type: 'json_object' },
-        max_tokens: 16384,
+        max_tokens: 8192,
         temperature: 0.6,
       });
 
@@ -295,7 +295,7 @@ export async function parseResume(
             ],
             stream: true,
             response_format: { type: 'json_object' },
-            max_tokens: 16384,
+            max_tokens: 8192,
             temperature: 0.4,
           });
 
