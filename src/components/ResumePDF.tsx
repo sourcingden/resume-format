@@ -2,12 +2,14 @@ import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
 import { ResumeData } from '../types';
 
-// Register Exo 2 font from local bundled files
+// Ensure font URLs are absolute to prevent React-PDF from failing to fetch them
+const currentOrigin = typeof window !== 'undefined' ? window.location.origin + window.location.pathname : '';
+
 Font.register({
   family: 'Exo 2',
   fonts: [
-    { src: `${import.meta.env.BASE_URL}fonts/Exo2-Regular.ttf`, fontWeight: 'normal' },
-    { src: `${import.meta.env.BASE_URL}fonts/Exo2-Bold.ttf`, fontWeight: 'bold' },
+    { src: new URL(import.meta.env.BASE_URL + 'fonts/Exo2-Regular.ttf', currentOrigin).href, fontWeight: 'normal' },
+    { src: new URL(import.meta.env.BASE_URL + 'fonts/Exo2-Bold.ttf', currentOrigin).href, fontWeight: 'bold' },
   ]
 });
 
@@ -18,29 +20,27 @@ const TEXT_BODY = '#374151';
 const TEXT_MUTED = '#6B7280';
 
 // ─── Shared page styles ───────────────────────────────────────────────────────
-const PAGE_V_PAD = 40;         // top/bottom padding on every page — creates page-break margins
+const PAGE_V_PAD = 40;         // top padding on every page
 const FOOTER_HEIGHT = 102;     // footer.png: 1632×280px → 280/1632*595 ≈ 102pt at A4 width
 const CONTENT_H_PAD = 60;
-const CONTENT_V_PAD_TOP = 20;  // extra space between the header image and the first text block
-const CONTENT_V_PAD_BOTTOM = 16;
+const CONTENT_V_PAD_TOP = 20;
+const FOOTER_SPACER = FOOTER_HEIGHT + 16; // spacer inside content to prevent footer overlap
 
 const styles = StyleSheet.create({
-  // paddingTop/Bottom apply to EVERY page — giving breathing room at page breaks.
-  // Header/footer use negative margins to bleed through this padding to the paper edge.
+  // paddingBottom: 0 — footer space is handled by footerSpacer inside content
   page: {
     paddingTop: PAGE_V_PAD,
-    // Reserve space at the bottom for the fixed footer so content doesn't overlap it
-    paddingBottom: PAGE_V_PAD + FOOTER_HEIGHT,
+    paddingBottom: 0,
     paddingHorizontal: 0,
     backgroundColor: '#FFFFFF',
     fontFamily: 'Exo 2',
     flexDirection: 'column',
   },
 
-  // Negative marginTop cancels page paddingTop so the header bleeds to the very top on page 1
+  // Negative marginTop so the header bleeds to the very top on page 1
   headerImage: { width: '100%', marginTop: -PAGE_V_PAD },
 
-  // Fixed footer pinned to the very bottom of every page (we filter to last-page-only via render prop)
+  // Fixed footer — shown only on last page via View render prop
   footerImage: {
     position: 'absolute',
     bottom: 0,
@@ -49,11 +49,16 @@ const styles = StyleSheet.create({
     width: '100%',
   },
 
-  // Content area
+  // Spacer at the bottom of content so text doesn't overlap the footer
+  footerSpacer: {
+    height: FOOTER_SPACER,
+  },
+
+  // Content area — no paddingBottom here (footerSpacer handles it)
   content: {
     paddingHorizontal: CONTENT_H_PAD,
     paddingTop: CONTENT_V_PAD_TOP,
-    paddingBottom: CONTENT_V_PAD_BOTTOM,
+    paddingBottom: 0,
   },
 
   // ── Name / title block ──────────────────────────────────────────────────────
@@ -100,11 +105,11 @@ const styles = StyleSheet.create({
   },
 
   // ── Body text ───────────────────────────────────────────────────────────────
-  text: { fontSize: 10, lineHeight: 1.5, color: TEXT_BODY },
+  text: { fontSize: 10, color: TEXT_BODY },
 
   // ── Experience items ────────────────────────────────────────────────────────
-  item: { marginBottom: 14 },
-  itemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 2 },
+  item: { marginBottom: 14, width: '100%' },
+  itemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 2, width: '100%' },
   itemTitle: { fontSize: 11, fontWeight: 'bold', color: TEXT_DARK, flex: 1 },
   itemDates: {
     fontSize: 9,
@@ -117,10 +122,10 @@ const styles = StyleSheet.create({
   itemSubtitle: { fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase', color: BLUE, marginBottom: 5 },
 
   // ── Bullet list ─────────────────────────────────────────────────────────────
-  list: { marginLeft: 10, marginTop: 4 },
-  listItem: { flexDirection: 'row', marginBottom: 3 },
-  bullet: { width: 10, fontSize: 10, color: BLUE },
-  listItemText: { flex: 1, fontSize: 10, lineHeight: 1.4, color: TEXT_BODY },
+  list: { marginLeft: 10, marginTop: 4, width: '100%' },
+  listItem: { flexDirection: 'row', marginBottom: 3, width: '100%' },
+  bullet: { width: 12, fontSize: 10, color: BLUE },
+  listItemText: { flex: 1, fontSize: 10, color: TEXT_BODY },
 
   // ── Tech stack row ──────────────────────────────────────────────────────────
   techRow: {
@@ -131,12 +136,13 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     paddingHorizontal: 8,
     paddingVertical: 4,
+    width: '100%',
   },
   techText: { fontSize: 9, color: TEXT_BODY },
   techBold: { fontSize: 9, fontWeight: 'bold', color: TEXT_DARK },
 
   // ── Two-column grid ─────────────────────────────────────────────────────────
-  twoColGrid: { flexDirection: 'row', gap: 24 },
+  twoColGrid: { flexDirection: 'row', gap: 24, width: '100%' },
   twoColLeft: { flex: 1 },
   twoColRight: { flex: 1 },
 
@@ -147,6 +153,7 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
     paddingVertical: 2,
     marginBottom: 10,
+    width: '100%',
   },
   eduDegree: { fontSize: 10, fontWeight: 'bold', color: TEXT_DARK, marginBottom: 2 },
   eduInstitution: { fontSize: 10, color: BLUE, marginBottom: 3 },
@@ -156,7 +163,7 @@ const styles = StyleSheet.create({
   skillCategory: { fontWeight: 'bold', color: TEXT_DARK },
 
   // ── Section spacing ──────────────────────────────────────────────────────────
-  section: { marginBottom: 22 },
+  section: { marginBottom: 22, width: '100%' },
 });
 
 // ─── Section title component with blue accent bar ────────────────────────────
@@ -192,7 +199,7 @@ const RichText = ({ text, style }: { text: string; style: object }) => {
 // ─── Experience entry ────────────────────────────────────────────────────────
 
 const ExperienceItem = ({ exp }: { exp: ResumeData['experience'][0] }) => (
-  <View style={styles.item} wrap={false}>
+  <View style={styles.item}>
     <View style={styles.itemHeader}>
       <Text style={styles.itemTitle}>{exp.role}</Text>
       {exp.dates ? <Text style={styles.itemDates}>{exp.dates}</Text> : null}
@@ -200,7 +207,7 @@ const ExperienceItem = ({ exp }: { exp: ResumeData['experience'][0] }) => (
     <Text style={styles.itemSubtitle}>{exp.company}</Text>
     <RichText text={exp.description} style={styles.text} />
 
-    {exp.responsibilities && exp.responsibilities.length > 0 && (
+    {exp.responsibilities && exp.responsibilities.length > 0 ? (
       <View style={{ marginTop: 6 }}>
         <Text style={[styles.text, { fontWeight: 'bold', marginBottom: 3 }]}>
           Key responsibilities &amp; achievements:
@@ -214,7 +221,7 @@ const ExperienceItem = ({ exp }: { exp: ResumeData['experience'][0] }) => (
           ))}
         </View>
       </View>
-    )}
+    ) : null}
 
     {exp.techStack ? (
       <View style={styles.techRow}>
@@ -239,31 +246,50 @@ export const ResumePDF = ({ data }: Props) => {
   const headerUrl = new URL(import.meta.env.BASE_URL + 'header.png', currentPath).href;
   const footerUrl = new URL(import.meta.env.BASE_URL + 'footer.png', currentPath).href;
 
+  // Pre-compute visibility flags — avoids `expr && (jsx)` which can leak `false` into React-PDF
+  const show = {
+    hrSummary:      Boolean(data.hrSummary) && !hidden.includes('basicInfo'),
+    skills:         Boolean(data.skills?.length) && !hidden.includes('skills'),
+    experience:     Boolean(data.experience?.length) && !hidden.includes('experience'),
+    projects:       Boolean(data.projects?.length) && !hidden.includes('projects'),
+    education:      Boolean(data.education?.length) && !hidden.includes('education'),
+    certifications: Boolean(data.certifications?.length) && !hidden.includes('certifications'),
+    languages:      Boolean(data.languages?.length) && !hidden.includes('languages'),
+    achievements:   Boolean(data.achievements?.length) && !hidden.includes('achievements'),
+    publications:   Boolean(data.publications?.length) && !hidden.includes('publications'),
+  };
+
+  // Adaptive two-column layout
+  const hasLeft  = show.education || show.certifications;
+  const hasRight = show.languages || show.achievements || show.publications;
+  const isTwoCol = hasLeft && hasRight;
+
   return (
     <Document title={`${data.jobTitle} - ${data.name} - Newxel CV 2026`}>
       <Page size="A4" style={styles.page}>
 
-        {/* Header: in-flow (no `fixed`), so it renders only once at the top of page 1 */}
+        {/* Header: in-flow, renders only once at the very top of page 1 */}
         <Image src={headerUrl} style={styles.headerImage} />
 
         <View style={styles.content}>
+
           {/* ── Hero ── */}
           <Text style={styles.jobTitle}>{data.jobTitle}</Text>
           <Text style={styles.name}>{data.name}</Text>
 
           {/* ── HR Summary ── */}
-          {data.hrSummary && !hidden.includes('basicInfo') && (
-            <View style={styles.section} wrap={false}>
+          {show.hrSummary ? (
+            <View style={styles.section}>
               <SectionTitle label="HR Summary" />
-              <RichText text={data.hrSummary} style={styles.text} />
+              <RichText text={data.hrSummary!} style={styles.text} />
             </View>
-          )}
+          ) : null}
 
           {/* ── Skills ── */}
-          {data.skills && data.skills.length > 0 && !hidden.includes('skills') && (
-            <View style={styles.section} wrap={false}>
+          {show.skills ? (
+            <View style={styles.section}>
               <SectionTitle label="Skills" />
-              {data.skills.map((skill, index) => (
+              {data.skills!.map((skill, index) => (
                 <View key={index} style={styles.listItem}>
                   <Text style={styles.bullet}>•</Text>
                   <Text style={styles.listItemText}>
@@ -273,26 +299,26 @@ export const ResumePDF = ({ data }: Props) => {
                 </View>
               ))}
             </View>
-          )}
+          ) : null}
 
           {/* ── Experience ── */}
-          {data.experience && data.experience.length > 0 && !hidden.includes('experience') && (
+          {show.experience ? (
             <View style={styles.section}>
               <SectionTitle label="Job Experience" />
-              {data.experience.map((exp, index) => (
+              {data.experience!.map((exp, index) => (
                 <View key={index}>
                   <ExperienceItem exp={exp} />
                 </View>
               ))}
             </View>
-          )}
+          ) : null}
 
           {/* ── Projects ── */}
-          {data.projects && data.projects.length > 0 && !hidden.includes('projects') && (
+          {show.projects ? (
             <View style={styles.section}>
               <SectionTitle label="Projects" />
-              {data.projects.map((proj, index) => (
-                <View key={index} style={styles.item} wrap={false}>
+              {data.projects!.map((proj, index) => (
+                <View key={index} style={styles.item}>
                   <View style={styles.itemHeader}>
                     <Text style={styles.itemTitle}>{proj.title}</Text>
                     {proj.link ? (
@@ -311,92 +337,95 @@ export const ResumePDF = ({ data }: Props) => {
                 </View>
               ))}
             </View>
-          )}
+          ) : null}
 
-          {/* ── Two-column grid: Education+Certifications | Languages+Achievements+Publications ── */}
-          {(
-            (data.education && data.education.length > 0 && !hidden.includes('education')) ||
-            (data.certifications && data.certifications.length > 0 && !hidden.includes('certifications')) ||
-            (data.languages && data.languages.length > 0 && !hidden.includes('languages')) ||
-            (data.achievements && data.achievements.length > 0 && !hidden.includes('achievements')) ||
-            (data.publications && data.publications.length > 0 && !hidden.includes('publications'))
-          ) && (
-            <View style={styles.twoColGrid} wrap={false}>
+          {/* ── Bottom grid: Education+Certifications | Languages+Achievements+Publications ── */}
+          {(hasLeft || hasRight) ? (
+            <View style={isTwoCol ? styles.twoColGrid : { width: '100%' }}>
+
               {/* Left column */}
-              <View style={styles.twoColLeft}>
-                {data.education && data.education.length > 0 && !hidden.includes('education') && (
-                  <View style={[styles.section, { marginBottom: 18 }]}>
-                    <SectionTitle label="Education" />
-                    {data.education.map((edu, index) => (
-                      <View key={index} style={styles.eduItem}>
-                        <Text style={styles.eduDegree}>{edu.degree}</Text>
-                        <Text style={styles.eduInstitution}>{edu.institution}</Text>
-                        <Text style={styles.eduDates}>{edu.dates}</Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-                {data.certifications && data.certifications.length > 0 && !hidden.includes('certifications') && (
-                  <View style={styles.section}>
-                    <SectionTitle label="Certifications" />
-                    {data.certifications.map((cert, index) => (
-                      <View key={index} style={styles.eduItem}>
-                        <Text style={styles.eduDegree}>{cert.title}</Text>
-                        <Text style={styles.eduDates}>
-                          {cert.issuer}{cert.date ? ` · ${cert.date}` : ''}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
+              {hasLeft ? (
+                <View style={isTwoCol ? styles.twoColLeft : { width: '100%' }}>
+                  {show.education ? (
+                    <View style={[styles.section, { marginBottom: 18 }]}>
+                      <SectionTitle label="Education" />
+                      {data.education!.map((edu, index) => (
+                        <View key={index} style={styles.eduItem}>
+                          <Text style={styles.eduDegree}>{edu.degree}</Text>
+                          <Text style={styles.eduInstitution}>{edu.institution}</Text>
+                          <Text style={styles.eduDates}>{edu.dates}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
+                  {show.certifications ? (
+                    <View style={styles.section}>
+                      <SectionTitle label="Certifications" />
+                      {data.certifications!.map((cert, index) => (
+                        <View key={index} style={styles.eduItem}>
+                          <Text style={styles.eduDegree}>{cert.title}</Text>
+                          <Text style={styles.eduDates}>
+                            {cert.issuer}{cert.date ? ` · ${cert.date}` : ''}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
 
               {/* Right column */}
-              <View style={styles.twoColRight}>
-                {data.languages && data.languages.length > 0 && !hidden.includes('languages') && (
-                  <View style={[styles.section, { marginBottom: 18 }]}>
-                    <SectionTitle label="Languages" />
-                    {data.languages.map((lang, index) => (
-                      <View key={index} style={styles.listItem}>
-                        <Text style={styles.bullet}>•</Text>
-                        <Text style={styles.listItemText}>
-                          <Text style={{ fontWeight: 'bold' }}>{lang.language}: </Text>
-                          {lang.level}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-                {data.achievements && data.achievements.length > 0 && !hidden.includes('achievements') && (
-                  <View style={[styles.section, { marginBottom: 18 }]}>
-                    <SectionTitle label="Achievements" />
-                    {data.achievements.map((item, index) => (
-                      <View key={index} style={styles.listItem}>
-                        <Text style={styles.bullet}>•</Text>
-                        <RichText text={item} style={styles.listItemText} />
-                      </View>
-                    ))}
-                  </View>
-                )}
-                {data.publications && data.publications.length > 0 && !hidden.includes('publications') && (
-                  <View style={styles.section}>
-                    <SectionTitle label="Publications" />
-                    {data.publications.map((pub, index) => (
-                      <View key={index} style={{ marginBottom: 8 }}>
-                        <Text style={styles.eduDegree}>{pub.title}</Text>
-                        {pub.details ? (
-                          <Text style={[styles.text, { color: TEXT_MUTED }]}>{pub.details}</Text>
-                        ) : null}
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
+              {hasRight ? (
+                <View style={isTwoCol ? styles.twoColRight : { width: '100%' }}>
+                  {show.languages ? (
+                    <View style={[styles.section, { marginBottom: 18 }]}>
+                      <SectionTitle label="Languages" />
+                      {data.languages!.map((lang, index) => (
+                        <View key={index} style={styles.listItem}>
+                          <Text style={styles.bullet}>•</Text>
+                          <Text style={styles.listItemText}>
+                            <Text style={{ fontWeight: 'bold' }}>{lang.language}: </Text>
+                            {lang.level}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
+                  {show.achievements ? (
+                    <View style={[styles.section, { marginBottom: 18 }]}>
+                      <SectionTitle label="Achievements" />
+                      {data.achievements!.map((item, index) => (
+                        <View key={index} style={styles.listItem}>
+                          <Text style={styles.bullet}>•</Text>
+                          <RichText text={item} style={styles.listItemText} />
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
+                  {show.publications ? (
+                    <View style={styles.section}>
+                      <SectionTitle label="Publications" />
+                      {data.publications!.map((pub, index) => (
+                        <View key={index} style={{ marginBottom: 8 }}>
+                          <Text style={styles.eduDegree}>{pub.title}</Text>
+                          {pub.details ? (
+                            <Text style={[styles.text, { color: TEXT_MUTED }]}>{pub.details}</Text>
+                          ) : null}
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
+
             </View>
-          )}
+          ) : null}
+
+          {/* Spacer so content doesn't overlap the footer on the last page */}
+          <View style={styles.footerSpacer} />
         </View>
 
-        {/* Footer: fixed at the bottom, shown only on the last page */}
+        {/* Footer: fixed, pinned to bottom, shown only on the last page */}
         <View
           fixed
           style={styles.footerImage}
