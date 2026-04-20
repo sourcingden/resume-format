@@ -124,7 +124,30 @@ export default function App() {
 
     try {
       let text = '';
-      if (file.type === 'application/pdf') {
+
+      if (file.name.toLowerCase().endsWith('.cdr')) {
+        // ── CDR: send to local conversion server ──────────────────────────
+        setProgressText('Sending CDR to conversion server…');
+        setProgress(8);
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const res = await fetch('http://localhost:3001/api/convert-cdr', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const json = await res.json();
+
+        if (!res.ok) {
+          throw new Error(json.error ?? 'CDR conversion failed');
+        }
+
+        text = json.text as string;
+        setProgressText('CDR converted — starting AI parse…');
+        setProgress(13);
+      } else if (file.type === 'application/pdf') {
         setProgressText('Extracting text from PDF...');
         setProgress(10);
         text = await extractTextFromPDF(file);
@@ -277,18 +300,18 @@ export default function App() {
                 </div>
                 <CardTitle className="text-2xl font-bold mb-2">Upload your resume</CardTitle>
                 <CardDescription className="text-base">
-                  Upload a PDF or text file, and our AI will convert it.
+                  Upload a PDF, DOCX, TXT, or CDR file, and our AI will convert it.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6 pt-8">
                 <div className="flex justify-center">
                   <Button asChild className="cursor-pointer py-6 px-8 text-md font-medium">
                     <label>
-                      Select File (PDF, TXT, DOCX)
+                      Select File (PDF, TXT, DOCX, CDR)
                       <input
                         type="file"
                         className="hidden"
-                        accept=".pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        accept=".pdf,.txt,.docx,.cdr,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/x-cdr,image/x-cdr"
                         onChange={handleFileUpload}
                       />
                     </label>
