@@ -126,7 +126,7 @@ export default function App() {
       let text = '';
 
       if (file.name.toLowerCase().endsWith('.cdr')) {
-        // ── CDR: send to local conversion server ──────────────────────────
+        // ── CDR: send to local conversion server, receive PDF back ────────
         setProgressText('Sending CDR to conversion server…');
         setProgress(8);
 
@@ -138,13 +138,18 @@ export default function App() {
           body: formData,
         });
 
-        const json = await res.json();
-
         if (!res.ok) {
+          // Error responses are JSON
+          const json = await res.json();
           throw new Error(json.error ?? 'CDR conversion failed');
         }
 
-        text = json.text as string;
+        // Server returns raw PDF binary — extract text using our existing pipeline
+        setProgressText('Extracting text from converted PDF…');
+        setProgress(10);
+        const pdfBlob = await res.blob();
+        const pdfFile = new File([pdfBlob], file.name.replace(/\.cdr$/i, '.pdf'), { type: 'application/pdf' });
+        text = await extractTextFromPDF(pdfFile);
         setProgressText('CDR converted — starting AI parse…');
         setProgress(13);
       } else if (file.type === 'application/pdf') {
