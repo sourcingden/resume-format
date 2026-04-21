@@ -149,13 +149,13 @@ export default function App() {
         setProgress(10);
         const pdfBlob = await res.blob();
         const pdfFile = new File([pdfBlob], file.name.replace(/\.cdr$/i, '.pdf'), { type: 'application/pdf' });
-        text = await extractTextFromPDF(pdfFile);
+        text = await extractTextFromPDF(pdfFile, setProgressText);
         setProgressText('CDR converted — starting AI parse…');
         setProgress(13);
       } else if (file.type === 'application/pdf') {
         setProgressText('Extracting text from PDF...');
         setProgress(10);
-        text = await extractTextFromPDF(file);
+        text = await extractTextFromPDF(file, setProgressText);
       } else if (file.name.endsWith('.docx')) {
         toast.warning('DOCX text extraction may be lossy. For best results, use a PDF.');
         text = await file.text();

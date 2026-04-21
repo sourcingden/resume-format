@@ -1,6 +1,7 @@
 import * as pdfjsLib from 'pdfjs-dist';
 // @ts-ignore
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import Tesseract from 'tesseract.js';
 
 // Configure the worker to use the local version
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
@@ -74,7 +75,7 @@ function normalizeText(text: string): string {
     .trim();
 }
 
-export async function extractTextFromPDF(file: File): Promise<string> {
+export async function extractTextFromPDF(file: File, onProgress?: (msg: string) => void): Promise<string> {
   try {
     const arrayBuffer = await file.arrayBuffer();
     const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -161,7 +162,37 @@ export async function extractTextFromPDF(file: File): Promise<string> {
       allPageTexts.push(pageText);
     }
 
-    return normalizeText(allPageTexts.join('\n\n'));
+    let extractedText = normalizeText(allPageTexts.join('\n\n'));
+
+    // Fallback to OCR if the PDF contains no extractable text (e.g. text converted to curves)
+    if (!extractedText.trim()) {
+      console.warn('No selectable text found in PDF. Falling back to OCR using Tesseract.js...');
+      let ocrText = '';
+      
+      for (let i = 1; i <= pdfDoc.numPages; i++) {
+        if (onProgress) onProgress(`Running OCR on page ${i} of ${pdfDoc.numPages}... This may take a moment.`);
+        const page = await pdfDoc.getPage(i);
+        const viewport = page.getViewport({ scale: 2.0 }); // High scale for better OCR accuracy
+        
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        if (!context) continue;
+        
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        
+        // Render PDF page into canvas
+        await page.render({ canvasContext: context, viewport } as any).promise;
+        
+        // Run OCR on the canvas
+        const { data: { text } } = await Tesseract.recognize(canvas, 'eng');
+        ocrText += text + '\n\n';
+      }
+      
+      extractedText = normalizeText(ocrText);
+    }
+
+    return extractedText;
   } catch (error) {
     console.error('Error extracting text from PDF:', error);
     throw new Error('Failed to parse PDF file. Please try pasting the text instead.');
